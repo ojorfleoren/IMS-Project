@@ -10,7 +10,7 @@ import java.sql.SQLException;
 
 /**
  *
- * @asdasd
+ * @asdasdasd
  */
 public class InventoryManagement {
         Connection conn = null;
