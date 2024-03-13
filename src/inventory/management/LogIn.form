@@ -61,16 +61,6 @@
                           <EmptySpace min="-2" pref="105" max="-2" attributes="0"/>
                           <Group type="103" groupAlignment="0" attributes="0">
                               <Component id="lblpassword" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Group type="102" alignment="0" attributes="0">
-                                  <Group type="103" groupAlignment="1" attributes="0">
-                                      <Component id="txtpassword" alignment="1" max="32767" attributes="0"/>
-                                      <Component id="txtusername" alignment="0" min="-2" pref="229" max="-2" attributes="0"/>
-                                      <Component id="btnLogin" alignment="1" max="32767" attributes="0"/>
-                                  </Group>
-                                  <EmptySpace min="-2" pref="64" max="-2" attributes="0"/>
-                                  <Component id="jLabel4" min="-2" max="-2" attributes="0"/>
-                                  <EmptySpace min="569" pref="569" max="-2" attributes="0"/>
-                              </Group>
                               <Component id="lblusername" alignment="0" min="-2" max="-2" attributes="0"/>
                               <Group type="102" alignment="0" attributes="0">
                                   <EmptySpace min="13" pref="13" max="-2" attributes="0"/>
@@ -86,6 +76,23 @@
                                           <Component id="jLabel5" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
+                              </Group>
+                              <Group type="102" alignment="1" attributes="0">
+                                  <Group type="103" groupAlignment="1" attributes="0">
+                                      <Group type="102" attributes="0">
+                                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                          <Component id="cbAccountType" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <Component id="txtPassword" alignment="1" max="32767" attributes="0"/>
+                                      <Group type="102" alignment="0" attributes="0">
+                                          <Component id="txtUsername" min="-2" pref="229" max="-2" attributes="0"/>
+                                          <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                                      </Group>
+                                      <Component id="btnLogin" alignment="1" max="32767" attributes="0"/>
+                                  </Group>
+                                  <EmptySpace min="-2" pref="64" max="-2" attributes="0"/>
+                                  <Component id="jLabel4" min="-2" max="-2" attributes="0"/>
+                                  <EmptySpace min="569" pref="569" max="-2" attributes="0"/>
                               </Group>
                           </Group>
                       </Group>
@@ -122,18 +129,21 @@
                   <EmptySpace pref="24" max="32767" attributes="0"/>
                   <Component id="lblusername" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
-                  <Component id="txtusername" min="-2" pref="33" max="-2" attributes="0"/>
+                  <Component id="txtUsername" min="-2" pref="33" max="-2" attributes="0"/>
                   <EmptySpace type="unrelated" max="-2" attributes="0"/>
                   <Component id="lblpassword" min="-2" max="-2" attributes="0"/>
                   <EmptySpace max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
-                      <Component id="txtpassword" alignment="3" min="-2" pref="34" max="-2" attributes="0"/>
+                      <Component id="txtPassword" alignment="3" min="-2" pref="34" max="-2" attributes="0"/>
                       <Component id="jLabel4" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace type="separate" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="0" attributes="0">
                       <Component id="check" alignment="0" min="-2" max="-2" attributes="0"/>
-                      <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Group type="103" alignment="0" groupAlignment="3" attributes="0">
+                          <Component id="jLabel5" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="cbAccountType" alignment="3" min="-2" max="-2" attributes="0"/>
+                      </Group>
                   </Group>
                   <EmptySpace min="-2" pref="46" max="-2" attributes="0"/>
                   <Component id="btnLogin" min="-2" max="-2" attributes="0"/>
@@ -201,24 +211,24 @@
             <Property name="text" type="java.lang.String" value="Password"/>
           </Properties>
         </Component>
-        <Component class="javax.swing.JTextField" name="txtusername">
+        <Component class="javax.swing.JTextField" name="txtUsername">
           <Properties>
             <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
               <Color blue="d9" green="f7" red="f7" type="rgb"/>
             </Property>
           </Properties>
           <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtusernameActionPerformed"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtUsernameActionPerformed"/>
           </Events>
         </Component>
-        <Component class="javax.swing.JPasswordField" name="txtpassword">
+        <Component class="javax.swing.JPasswordField" name="txtPassword">
           <Properties>
             <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
               <Color blue="d8" green="f7" red="f7" type="rgb"/>
             </Property>
           </Properties>
           <Events>
-            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtpasswordActionPerformed"/>
+            <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtPasswordActionPerformed"/>
           </Events>
         </Component>
         <Component class="javax.swing.JCheckBox" name="check">
@@ -259,6 +269,20 @@
             </Property>
             <Property name="text" type="java.lang.String" value="Show Password"/>
           </Properties>
+        </Component>
+        <Component class="javax.swing.JComboBox" name="cbAccountType">
+          <Properties>
+            <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
+              <StringArray count="3">
+                <StringItem index="0" value="User"/>
+                <StringItem index="1" value="Admin"/>
+                <StringItem index="2" value="SuperAdmin"/>
+              </StringArray>
+            </Property>
+          </Properties>
+          <AuxValues>
+            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+          </AuxValues>
         </Component>
       </SubComponents>
     </Container>

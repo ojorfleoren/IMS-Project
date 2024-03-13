@@ -76,7 +76,7 @@ public void insertItem() {
                 pst.execute();
                 JOptionPane.showMessageDialog(this, "Item added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
                 clear();
-                displayItems();
+                displayDataItems();
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -90,7 +90,7 @@ public void insertItem() {
                 ex.printStackTrace();
             }
         }
-    }
+    }   
 //Delete Item Functionality
 public void delete_tblStock() {
     try {
@@ -113,7 +113,7 @@ public void delete_tblStock() {
             pst.executeUpdate();
 
             JOptionPane.showMessageDialog(this, "Item deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            displayItems(); // Refresh the JTable after deletion
+            displayDataItems(); // Refresh the JTable after deletion
         }
     } catch (SQLException e) {
         e.printStackTrace();
@@ -238,7 +238,7 @@ public void transferCheckingItem() {
             return;
         }
         // Combo box for selecting the destination area
-        JComboBox<String> areaComboBox = new JComboBox<>(new String[]{"Stock","Checking", "Return", "Repair", "Disposal"});
+        JComboBox<String> areaComboBox = new JComboBox<>(new String[]{"Stock", "Return", "Repair", "Disposal"});
         JLabel areaLabel = new JLabel("Select the destination area:");
         Object[] areaDialog = {areaLabel, areaComboBox};
 
@@ -290,86 +290,6 @@ public void transferCheckingItem() {
             JOptionPane.showMessageDialog(this, "Transfer completed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
             displayCombinedData(); // Refresh the JTable after transfer
             displayCheckingData(); // Display Checking data
-        }
-    } catch (SQLException | NumberFormatException e) {
-        e.printStackTrace();
-        System.err.println("Error during item transfer.");
-    }
-}
-public void transferReturnItem() {
-    try {
-        int selectedRow = tblReturn.getSelectedRow();
-
-        if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select an item to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        int itemID = (int) tblReturn.getValueAt(selectedRow, 0);
-        int currentQty = (int) tblReturn.getValueAt(selectedRow, 7); // Assuming quantity is at index 8
-
-        String quantityStr = JOptionPane.showInputDialog(this, "Enter quantity to transfer:", "Transfer Quantity", JOptionPane.PLAIN_MESSAGE);
-
-        if (quantityStr == null || quantityStr.trim().isEmpty()) {
-            return; // User canceled or entered an empty quantity
-        }
-
-        int transferQty = Integer.parseInt(quantityStr);
-
-        if (transferQty <= 0 || transferQty > currentQty) {
-            JOptionPane.showMessageDialog(this, "Invalid quantity to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        JComboBox<String> areaComboBox = new JComboBox<>(new String[]{"Stock", "Checking", "Return", "Repair", "Disposal"});
-        JLabel areaLabel = new JLabel("Select the destination area:");
-        Object[] areaDialog = {areaLabel, areaComboBox};
-
-        int areaOption = JOptionPane.showConfirmDialog(this, areaDialog, "Select Destination Area", JOptionPane.OK_CANCEL_OPTION);
-
-        if (areaOption == JOptionPane.CANCEL_OPTION) {
-            return; // User canceled
-        }
-
-        int selectedAreaIndex = areaComboBox.getSelectedIndex();
-        String selectedArea = getDestinationTableName(selectedAreaIndex);
-
-        SpinnerDateModel dateModel = new SpinnerDateModel();
-        JSpinner dateSpinner = new JSpinner(dateModel);
-        dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd"));
-        JLabel dateLabel = new JLabel("Select the transfer date:");
-        Object[] dateDialog = {dateLabel, dateSpinner};
-
-        int dateOption = JOptionPane.showConfirmDialog(this, dateDialog, "Select Transfer Date", JOptionPane.OK_CANCEL_OPTION);
-
-        if (dateOption == JOptionPane.CANCEL_OPTION) {
-            return; // User canceled
-        }
-
-        java.sql.Date transferDate = new java.sql.Date(((java.util.Date) dateSpinner.getValue()).getTime());
-
-        String message = "Are you sure you want to transfer " + transferQty + " items?";
-        int option = JOptionPane.showConfirmDialog(this, message, "Confirmation", JOptionPane.YES_NO_OPTION);
-
-        if (option == JOptionPane.YES_OPTION) {
-            String updateSql = "UPDATE Return SET Qty = ? WHERE ItemID = ?";
-            try (PreparedStatement updatePst = conn.prepareStatement(updateSql)) {
-                updatePst.setInt(1, currentQty - transferQty);
-                updatePst.setInt(2, itemID);
-                updatePst.executeUpdate();
-            }
-
-            String insertSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
-            try (PreparedStatement insertPst = conn.prepareStatement(insertSql)) {
-                insertPst.setInt(1, itemID);
-                insertPst.setInt(2, transferQty);
-                insertPst.setDate(3, transferDate);
-                insertPst.executeUpdate();
-            }
-
-            JOptionPane.showMessageDialog(this, "Transfer completed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            displayReturn();
-            displayReturnData();
         }
     } catch (SQLException | NumberFormatException e) {
         e.printStackTrace();
@@ -443,8 +363,8 @@ public void displayCombinedData() {
         System.err.println("Error retrieving combined data from the database.");
     }
 }
-public void displayReturn() {
-    DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
+public void displayChecking() {
+    DefaultTableModel model = (DefaultTableModel) tblChecking.getModel();
     model.setRowCount(0); // Clear existing rows
 
     try {
@@ -453,7 +373,7 @@ public void displayReturn() {
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Status, s.Qty, " +
                      "c.Date AS CheckingDate " +
                      "FROM Stock s " +
-                     "LEFT JOIN Checking c ON s.ItemID = c.ItemID ";
+                     "LEFT JOIN Return c ON s.ItemID = c.ItemID ";
 
         try (PreparedStatement pst = conn.prepareStatement(sql);
              ResultSet rst = pst.executeQuery()) {
@@ -470,10 +390,10 @@ public void displayReturn() {
                 int quantity = rst.getInt("Qty");
 
                 // Retrieve dates from different tables
-                Date checkingDate = rst.getDate("CheckingDate");
+                Date returnDate = rst.getDate("ReturnDate");
 
                 // Add a row to the table with all the information
-                model.addRow(new Object[]{itemID, serialNumber, itemName, modelValue, category, specification, brand, status, quantity, checkingDate});
+                model.addRow(new Object[]{itemID, serialNumber, itemName, modelValue, category, specification, brand, status, quantity, returnDate});
             }
         }
     } catch (SQLException e) {
@@ -650,8 +570,8 @@ public void clear(){
         txtBrand.setText("");
         txtQty.setText("");
     } 
-    //Display data from database to JTable
-public void displayItems() {
+    //Display data from database to ADD form table
+public void displayDataItems() {
     DefaultTableModel model = (DefaultTableModel) tblDataInfo.getModel();
     model.setRowCount(0); // Clear existing rows
 
@@ -733,49 +653,49 @@ public void displayStockItems() {
     }
 }
     //Display Checking Records
-public void displayCheckingItems() {
-    DefaultTableModel model = (DefaultTableModel) tblChecking.getModel();
-    model.setRowCount(0); // Clear existing rows
+ 
+private void addUser() {
+        String username = txtUserName.getText();
+        String password = new String(txtPass.getPassword());
+        String accountType = (String) cbAccountType.getSelectedItem();
 
-    try {
-        String sql = "SELECT * FROM Checking";
-        pst = conn.prepareStatement(sql);
-        rst = pst.executeQuery();
-
-        while (rst.next()) {
-            int ItemID = rst.getInt("ItemID");
-            int serialNumber = rst.getInt("SerialNo");
-            String itemName = rst.getString("ItemName");
-            String modelValue = rst.getString("Model");
-            String specification = rst.getString("Specification");
-            String category = rst.getString("Category");
-            String brand = rst.getString("Brand");
-            String status = rst.getString("Status");
-            int quantity = rst.getInt("Qty");
-
-            // Map database column names to JTable column names
-            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+        // Validation
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
         }
 
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving items from the database.");
-    } finally {
+        // Database interaction (integrate this with your existing connection code)
         try {
-            if (rst != null) {
-                rst.close();
-            }
-            if (pst != null) {
-                pst.close();
-            }
+            String query = "INSERT INTO Account (UserName, PassWord, AccountType) VALUES (?, ?, ?)";
+            pst = conn.prepareStatement(query);
+            pst.setString(1, username);
+            pst.setString(2, password);
+            pst.setString(3, accountType);
+            pst.executeUpdate();
+
+            JOptionPane.showMessageDialog(this, "User added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            // Reset fields after successful addition
+            txtUserName.setText("");
+            txtPass.setText("");
+            cbAccountType.setSelectedIndex(0);
+            chkPass.setSelected(false);
+
         } catch (SQLException ex) {
             ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error adding user.", "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Close resources in a finally block
+            try {
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
-}
-
-
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -826,11 +746,14 @@ public void displayCheckingItems() {
         jPanel11 = new javax.swing.JPanel();
         jLabel11 = new javax.swing.JLabel();
         jLabel12 = new javax.swing.JLabel();
-        jComboBox1 = new javax.swing.JComboBox<>();
-        jTextField6 = new javax.swing.JTextField();
-        jPasswordField1 = new javax.swing.JPasswordField();
+        cbAccountType = new javax.swing.JComboBox<>();
         jLabel16 = new javax.swing.JLabel();
         jLabel17 = new javax.swing.JLabel();
+        btnSaveUser = new javax.swing.JButton();
+        txtUserName = new javax.swing.JTextField();
+        txtPass = new javax.swing.JPasswordField();
+        chkPass = new javax.swing.JCheckBox();
+        jLabel20 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         jLabel14 = new javax.swing.JLabel();
@@ -1011,6 +934,11 @@ public void displayCheckingItems() {
         });
 
         cbSStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Stock", "Checking", "Return", "Repair", "Disposal" }));
+        cbSStatus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cbSStatusActionPerformed(evt);
+            }
+        });
 
         txtInsert.setBackground(new java.awt.Color(0, 153, 153));
         txtInsert.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
@@ -1038,7 +966,7 @@ public void displayCheckingItems() {
                 {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Serial", "ItemName", "Model", "Specification", "Category", "Brand", "Status", "Qty"
+                "ID", "SerialNo", "ItemName", "Model", "Specification", "Category", "Brand", "Status", "Qty"
             }
         ) {
             Class[] types = new Class [] {
@@ -1241,17 +1169,12 @@ public void displayCheckingItems() {
         jLabel12.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
         jLabel12.setText("Password");
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Superadmin", "Admin", "User" }));
-        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
+        cbAccountType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "SuperAdmin", "Admin", "User" }));
+        cbAccountType.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox1ActionPerformed(evt);
+                cbAccountTypeActionPerformed(evt);
             }
         });
-
-        jTextField6.setEditable(false);
-        jTextField6.setBackground(new java.awt.Color(247, 247, 217));
-
-        jPasswordField1.setBackground(new java.awt.Color(247, 247, 217));
 
         jLabel16.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
         jLabel16.setText("Account Type");
@@ -1260,26 +1183,62 @@ public void displayCheckingItems() {
         jLabel17.setForeground(new java.awt.Color(51, 51, 51));
         jLabel17.setText("Add User Form");
 
+        btnSaveUser.setBackground(new java.awt.Color(0, 153, 153));
+        btnSaveUser.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnSaveUser.setText("Save");
+        btnSaveUser.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveUserActionPerformed(evt);
+            }
+        });
+
+        txtUserName.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtUserNameActionPerformed(evt);
+            }
+        });
+
+        chkPass.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chkPassActionPerformed(evt);
+            }
+        });
+
+        jLabel20.setText("ShowPassword");
+
         javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
         jPanel11.setLayout(jPanel11Layout);
         jPanel11Layout.setHorizontalGroup(
             jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel11Layout.createSequentialGroup()
-                .addGap(86, 86, 86)
-                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel16)
-                    .addComponent(jLabel12)
-                    .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel11)
-                            .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(79, Short.MAX_VALUE))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel11Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 274, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(86, 86, 86))
+            .addGroup(jPanel11Layout.createSequentialGroup()
+                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                        .addGroup(jPanel11Layout.createSequentialGroup()
+                            .addContainerGap()
+                            .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 276, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel11Layout.createSequentialGroup()
+                            .addGap(86, 86, 86)
+                            .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel12)
+                                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(jLabel16, javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel11Layout.createSequentialGroup()
+                                        .addComponent(jLabel11)
+                                        .addGap(205, 205, 205))
+                                    .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(jPanel11Layout.createSequentialGroup()
+                                        .addGap(6, 6, 6)
+                                        .addComponent(chkPass)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jLabel20)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addComponent(btnSaveUser, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)))))))
+                .addContainerGap(79, Short.MAX_VALUE))
         );
         jPanel11Layout.setVerticalGroup(
             jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1289,16 +1248,21 @@ public void displayCheckingItems() {
                 .addGap(38, 38, 38)
                 .addComponent(jLabel11)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(12, 12, 12)
                 .addComponent(jLabel12)
                 .addGap(8, 8, 8)
-                .addComponent(jPasswordField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel16)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(91, Short.MAX_VALUE))
+                .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(btnSaveUser)
+                    .addComponent(jLabel20)
+                    .addComponent(chkPass))
+                .addContainerGap(49, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
@@ -1313,7 +1277,7 @@ public void displayCheckingItems() {
         jPanel10Layout.setVerticalGroup(
             jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel10Layout.createSequentialGroup()
-                .addContainerGap(153, Short.MAX_VALUE)
+                .addContainerGap(154, Short.MAX_VALUE)
                 .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(140, 140, 140))
         );
@@ -1980,9 +1944,9 @@ public void displayCheckingItems() {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
 
-    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+    private void cbAccountTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbAccountTypeActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBox1ActionPerformed
+    }//GEN-LAST:event_cbAccountTypeActionPerformed
 
     private void btnAddUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddUserActionPerformed
         // TODO add your handling code here:
@@ -2005,7 +1969,7 @@ public void displayCheckingItems() {
 
     private void btnViewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewActionPerformed
         // TODO add your handling code here:
-        displayItems();
+        displayDataItems();
         displayStockItems();
     }//GEN-LAST:event_btnViewActionPerformed
 
@@ -2028,7 +1992,7 @@ public void displayCheckingItems() {
     private void btnTransfer3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransfer3ActionPerformed
         // TODO add your handling code here:
         transferCheckingItem();
-        displayCheckingItems();
+
     }//GEN-LAST:event_btnTransfer3ActionPerformed
 
     private void btnDelete2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelete2ActionPerformed
@@ -2061,7 +2025,7 @@ public void displayCheckingItems() {
     private void btnStockActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStockActionPerformed
         // TODO add your handling code here:
         tabSuperadmin.setSelectedIndex(0);
-        displayItems();
+        displayStockItems();
     }//GEN-LAST:event_btnStockActionPerformed
 
     private void btnCheckingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCheckingActionPerformed
@@ -2087,6 +2051,29 @@ public void displayCheckingItems() {
         tabSuperadmin.setSelectedIndex(4);
         displayDisposalData();
     }//GEN-LAST:event_btnDisposalActionPerformed
+
+    private void cbSStatusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbSStatusActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbSStatusActionPerformed
+
+    private void btnSaveUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveUserActionPerformed
+        // TODO add your handling code here:
+        addUser();
+    }//GEN-LAST:event_btnSaveUserActionPerformed
+
+    private void txtUserNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUserNameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtUserNameActionPerformed
+
+    private void chkPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkPassActionPerformed
+        // TODO add your handling code here:
+         if(chkPass.isSelected()){
+            txtPass.setEchoChar((char)0);
+        }
+        else{
+            txtPass.setEchoChar('*');
+        }
+    }//GEN-LAST:event_chkPassActionPerformed
 
     /**
      * @param args the command line arguments
@@ -2138,6 +2125,7 @@ public void displayCheckingItems() {
     private javax.swing.JButton btnRecords;
     private javax.swing.JButton btnRepair;
     private javax.swing.JButton btnReturn;
+    private javax.swing.JButton btnSaveUser;
     private javax.swing.JButton btnSearch1;
     private javax.swing.JButton btnSearch2;
     private javax.swing.JButton btnSearch3;
@@ -2150,9 +2138,10 @@ public void displayCheckingItems() {
     private javax.swing.JButton btnTransfer5;
     private javax.swing.JButton btnTransferStock;
     private javax.swing.JButton btnView;
+    private javax.swing.JComboBox<String> cbAccountType;
     private javax.swing.JComboBox<String> cbSCategory;
     private javax.swing.JComboBox<String> cbSStatus;
-    private javax.swing.JComboBox<String> jComboBox1;
+    private javax.swing.JCheckBox chkPass;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -2165,6 +2154,7 @@ public void displayCheckingItems() {
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
@@ -2188,7 +2178,6 @@ public void displayCheckingItems() {
     private javax.swing.JPanel jPanel7;
     private javax.swing.JPanel jPanel8;
     private javax.swing.JPanel jPanel9;
-    private javax.swing.JPasswordField jPasswordField1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -2197,7 +2186,6 @@ public void displayCheckingItems() {
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField6;
     private javax.swing.JTabbedPane tabPane;
     private javax.swing.JTabbedPane tabSuperadmin;
     private javax.swing.JTable tblChecking;
@@ -2213,6 +2201,7 @@ public void displayCheckingItems() {
     private javax.swing.JButton txtInsert1;
     private javax.swing.JTextField txtItemName;
     private javax.swing.JTextField txtModel;
+    private javax.swing.JPasswordField txtPass;
     private javax.swing.JTextField txtQty;
     private javax.swing.JTextField txtSearch2;
     private javax.swing.JTextField txtSearch3;
@@ -2221,5 +2210,6 @@ public void displayCheckingItems() {
     private javax.swing.JTextField txtSearchStock;
     private javax.swing.JTextField txtSerial;
     private javax.swing.JTextField txtSpecification;
+    private javax.swing.JTextField txtUserName;
     // End of variables declaration//GEN-END:variables
 }

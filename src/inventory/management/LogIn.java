@@ -1,7 +1,11 @@
 package inventory.management;
 
 
-import javax.swing.JOptionPane;
+import javax.swing.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -13,13 +17,96 @@ import javax.swing.JOptionPane;
  * @author OJT-21
  */
 public class LogIn extends javax.swing.JFrame {
-
+    Connection conn = null;
+    PreparedStatement pst = null;
+    ResultSet rst = null;
     /**
      * Creates new form LogIn
      */
     public LogIn() {
         initComponents();
+        conn = DBConnection.connectDB();
     }
+    
+    private void login() {
+        String username = txtUsername.getText();
+        String password = new String(txtPassword.getPassword());
+        String accountType = (String) cbAccountType.getSelectedItem();
+
+        // Validation
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Database interaction (integrate this with your existing connection code)
+        try {
+            String query = "SELECT * FROM Account WHERE UserName = ? AND PassWord = ? AND AccountType = ?";
+            pst = conn.prepareStatement(query);
+            pst.setString(1, username);
+            pst.setString(2, password);
+            pst.setString(3, accountType);
+
+            rst = pst.executeQuery();
+
+            if (rst.next()) {
+                // Successful login
+                openAppropriateFrame(accountType);
+                dispose(); // Close the login frame after successful login
+            } else {
+                // Invalid credentials
+                JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Close resources in a finally block
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void openAppropriateFrame(String accountType) {
+        switch (accountType) {
+            case "User":
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        new User().setVisible(true);
+                    }
+                });
+                break;
+            case "Admin":
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        new admin().setVisible(true);
+                    }
+                });
+                break;
+            case "SuperAdmin":
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        new superadmin().setVisible(true);
+                    }
+                });
+                break;
+            default:
+                // Handle unexpected account type
+                break;
+        }
+    }
+
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -36,13 +123,14 @@ public class LogIn extends javax.swing.JFrame {
         lblpleaselogin = new javax.swing.JLabel();
         lblusername = new javax.swing.JLabel();
         lblpassword = new javax.swing.JLabel();
-        txtusername = new javax.swing.JTextField();
-        txtpassword = new javax.swing.JPasswordField();
+        txtUsername = new javax.swing.JTextField();
+        txtPassword = new javax.swing.JPasswordField();
         check = new javax.swing.JCheckBox();
         btnLogin = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
+        cbAccountType = new javax.swing.JComboBox<>();
         jLabel2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -70,17 +158,17 @@ public class LogIn extends javax.swing.JFrame {
         lblpassword.setForeground(new java.awt.Color(255, 255, 255));
         lblpassword.setText("Password");
 
-        txtusername.setBackground(new java.awt.Color(247, 247, 217));
-        txtusername.addActionListener(new java.awt.event.ActionListener() {
+        txtUsername.setBackground(new java.awt.Color(247, 247, 217));
+        txtUsername.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtusernameActionPerformed(evt);
+                txtUsernameActionPerformed(evt);
             }
         });
 
-        txtpassword.setBackground(new java.awt.Color(247, 247, 216));
-        txtpassword.addActionListener(new java.awt.event.ActionListener() {
+        txtPassword.setBackground(new java.awt.Color(247, 247, 216));
+        txtPassword.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtpasswordActionPerformed(evt);
+                txtPasswordActionPerformed(evt);
             }
         });
 
@@ -104,6 +192,8 @@ public class LogIn extends javax.swing.JFrame {
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("Show Password");
 
+        cbAccountType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "User", "Admin", "SuperAdmin" }));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -114,14 +204,6 @@ public class LogIn extends javax.swing.JFrame {
                         .addGap(105, 105, 105)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(lblpassword)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(txtpassword)
-                                    .addComponent(txtusername, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(btnLogin, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addGap(64, 64, 64)
-                                .addComponent(jLabel4)
-                                .addGap(569, 569, 569))
                             .addComponent(lblusername)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(13, 13, 13)
@@ -133,7 +215,20 @@ public class LogIn extends javax.swing.JFrame {
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(check)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jLabel5))))))
+                                        .addComponent(jLabel5))))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGap(0, 0, Short.MAX_VALUE)
+                                        .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(txtPassword)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                        .addComponent(txtUsername, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(0, 0, Short.MAX_VALUE))
+                                    .addComponent(btnLogin, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGap(64, 64, 64)
+                                .addComponent(jLabel4)
+                                .addGap(569, 569, 569))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(135, 135, 135)
                         .addComponent(lblpleaselogin))
@@ -159,17 +254,19 @@ public class LogIn extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
                 .addComponent(lblusername)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtusername, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(txtUsername, javax.swing.GroupLayout.PREFERRED_SIZE, 33, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(lblpassword)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtpassword, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel4))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(check)
-                    .addComponent(jLabel5))
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel5)
+                        .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGap(46, 46, 46)
                 .addComponent(btnLogin)
                 .addGap(53, 53, 53))
@@ -199,53 +296,78 @@ public class LogIn extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void txtusernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtusernameActionPerformed
+    private void txtUsernameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUsernameActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtusernameActionPerformed
+    }//GEN-LAST:event_txtUsernameActionPerformed
 
-    private void txtpasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtpasswordActionPerformed
+    private void txtPasswordActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPasswordActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtpasswordActionPerformed
+    }//GEN-LAST:event_txtPasswordActionPerformed
 
     private void checkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkActionPerformed
         if(check.isSelected()){
-            txtpassword.setEchoChar((char)0);
+            txtPassword.setEchoChar((char)0);
         }
         else{
-            txtpassword.setEchoChar('*');
+            txtPassword.setEchoChar('*');
         }
     }//GEN-LAST:event_checkActionPerformed
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         // TODO add your handling code here:
-
-        if (txtusername.getText().equals("") ){
+        login();
+       /* if (txtUsername.getText().equals("") ){
             JOptionPane.showMessageDialog(null, "Please fill out username");
         }
-        else if(txtpassword.getText().equals("")){
+        else if(txtPassword.getText().equals("")){
             JOptionPane.showMessageDialog(null,"Please fill out password ");
         }
-        else if(txtusername.getText().contains("user") && txtpassword.getText().contains("user")){
+        else if(txtUsername.getText().contains("user") && txtPassword.getText().contains("user")){
             JOptionPane.showMessageDialog(null,"Login Successful");
            new User().setVisible(true);
             dispose();
         }
-         else if(txtusername.getText().contains("admin") && txtpassword.getText().contains("admin")){
+         else if(txtUsername.getText().contains("admin") && txtPassword.getText().contains("admin")){
             JOptionPane.showMessageDialog(null,"Login Successful");
            new admin().setVisible(true);
             dispose();
         }
-          else if(txtusername.getText().contains("Sadmin") && txtpassword.getText().contains("Sadmin")){
+          else if(txtUsername.getText().contains("Sadmin") && txtPassword.getText().contains("Sadmin")){
             JOptionPane.showMessageDialog(null,"Login Successful");
            new superadmin().setVisible(true);
             dispose();
         }
         else{
             JOptionPane.showMessageDialog(null, "Wrong username or password!!!","Message",JOptionPane.ERROR_MESSAGE);
-            txtusername.setText("");
-            txtpassword.setText("");
+            txtUsername.setText("");
+            txtPassword.setText("");
         }
+        /*
+                String username = txtUsername.getText();
+                String password = txtPassword.getText();
+                String userType = cbAccountType.getSelectedItem().toString();
 
+                String accountType = databaseManager.checkLogin(username, password, userType);
+
+                if (!accountType.isEmpty()) {
+                    if (accountType.equals("User")) {
+                        // Redirect to User Dashboard
+                        JOptionPane.showMessageDialog(null,"Login Successful");
+                        new User.setVisible(true);
+                    } else if (accountType.equals("Admin")) {
+                        // Redirect to Admin Dashboard
+                        JOptionPane.showMessageDialog(null,"Login Successful");
+                        new Admin.setVisible(true);
+                    } else if (accountType.equals("Superadmin")) {
+                        // Redirect to Superadmin Dashboard
+                        JOptionPane.showMessageDialog(null,"Login Successful");
+                        new SuperAdmin.setVisible(true);
+                    }
+                } else {
+                    // Show error message for invalid credentials
+                    JOptionPane.showMessageDialog(LogIn.this, "Invalid credentials", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                */
     }//GEN-LAST:event_btnLoginActionPerformed
 
     /**
@@ -285,6 +407,7 @@ public class LogIn extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnLogin;
+    private javax.swing.JComboBox<String> cbAccountType;
     private javax.swing.JCheckBox check;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -296,7 +419,7 @@ public class LogIn extends javax.swing.JFrame {
     private javax.swing.JLabel lblpleaselogin;
     private javax.swing.JLabel lblusername;
     private javax.swing.JLabel lblwelcome;
-    private javax.swing.JPasswordField txtpassword;
-    private javax.swing.JTextField txtusername;
+    private javax.swing.JPasswordField txtPassword;
+    private javax.swing.JTextField txtUsername;
     // End of variables declaration//GEN-END:variables
 }
