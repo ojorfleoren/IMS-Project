@@ -39,7 +39,7 @@ public class LogIn extends javax.swing.JFrame {
             return;
         }
 
-        // Database interaction (integrate this with your existing connection code)
+        // Database interaction 
         try {
             String query = "SELECT * FROM Account WHERE UserName = ? AND PassWord = ? AND AccountType = ?";
             pst = conn.prepareStatement(query);
@@ -51,11 +51,16 @@ public class LogIn extends javax.swing.JFrame {
 
             if (rst.next()) {
                 // Successful login
-                openAppropriateFrame(accountType);
+                JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
                 dispose(); // Close the login frame after successful login
+                openAppropriateFrame(accountType);
             } else {
                 // Invalid credentials
                 JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+                txtUsername.setText("");
+                txtPassword.setText("");
+                cbAccountType.setSelectedIndex(0);
+                chkPass.setSelected(false);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -74,7 +79,6 @@ public class LogIn extends javax.swing.JFrame {
             }
         }
     }
-
     private void openAppropriateFrame(String accountType) {
         switch (accountType) {
             case "User":
@@ -125,7 +129,7 @@ public class LogIn extends javax.swing.JFrame {
         lblpassword = new javax.swing.JLabel();
         txtUsername = new javax.swing.JTextField();
         txtPassword = new javax.swing.JPasswordField();
-        check = new javax.swing.JCheckBox();
+        chkPass = new javax.swing.JCheckBox();
         btnLogin = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
@@ -172,11 +176,11 @@ public class LogIn extends javax.swing.JFrame {
             }
         });
 
-        check.setBackground(new java.awt.Color(0, 0, 0,1));
-        check.setForeground(new java.awt.Color(255, 255, 255));
-        check.addActionListener(new java.awt.event.ActionListener() {
+        chkPass.setBackground(new java.awt.Color(0, 0, 0,1));
+        chkPass.setForeground(new java.awt.Color(255, 255, 255));
+        chkPass.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                checkActionPerformed(evt);
+                chkPassActionPerformed(evt);
             }
         });
 
@@ -213,7 +217,7 @@ public class LogIn extends javax.swing.JFrame {
                                         .addGap(621, 621, 621)
                                         .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE))
                                     .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(check)
+                                        .addComponent(chkPass)
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                         .addComponent(jLabel5))))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
@@ -263,7 +267,7 @@ public class LogIn extends javax.swing.JFrame {
                     .addComponent(jLabel4))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(check)
+                    .addComponent(chkPass)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(jLabel5)
                         .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
@@ -304,14 +308,14 @@ public class LogIn extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtPasswordActionPerformed
 
-    private void checkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_checkActionPerformed
-        if(check.isSelected()){
+    private void chkPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkPassActionPerformed
+        if(chkPass.isSelected()){
             txtPassword.setEchoChar((char)0);
         }
         else{
             txtPassword.setEchoChar('*');
         }
-    }//GEN-LAST:event_checkActionPerformed
+    }//GEN-LAST:event_chkPassActionPerformed
 
     private void btnLoginActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLoginActionPerformed
         // TODO add your handling code here:
@@ -408,7 +412,7 @@ public class LogIn extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnLogin;
     private javax.swing.JComboBox<String> cbAccountType;
-    private javax.swing.JCheckBox check;
+    private javax.swing.JCheckBox chkPass;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

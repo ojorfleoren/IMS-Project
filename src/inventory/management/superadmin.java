@@ -28,7 +28,7 @@ public class superadmin extends javax.swing.JFrame {
     PreparedStatement pst = null;
     ResultSet rst = null;
 
-    public superadmin() {
+public superadmin() {
         initComponents();
         conn = DBConnection.connectDB();
         
@@ -822,7 +822,7 @@ private void addUser() {
                 btnDashboardActionPerformed(evt);
             }
         });
-        jPanel1.add(btnDashboard, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 276, 220, 50));
+        jPanel1.add(btnDashboard, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 200, 220, 60));
 
         jPanel5.setBackground(new java.awt.Color(51, 51, 51));
 
@@ -1860,7 +1860,7 @@ private void addUser() {
                 btnAddActionPerformed(evt);
             }
         });
-        jPanel1.add(btnAdd, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 340, 220, 50));
+        jPanel1.add(btnAdd, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 270, 220, 60));
 
         btnRecords.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnRecords.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/records icon.png"))); // NOI18N
@@ -1870,7 +1870,7 @@ private void addUser() {
                 btnRecordsActionPerformed(evt);
             }
         });
-        jPanel1.add(btnRecords, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 460, 220, -1));
+        jPanel1.add(btnRecords, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 410, 220, 60));
 
         btnLogout.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnLogout.setText("LOG OUT");
@@ -1879,7 +1879,7 @@ private void addUser() {
                 btnLogoutActionPerformed(evt);
             }
         });
-        jPanel1.add(btnLogout, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 590, -1, -1));
+        jPanel1.add(btnLogout, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 650, -1, -1));
 
         btnAddUser.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnAddUser.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/user icon (2).png"))); // NOI18N
@@ -1889,7 +1889,7 @@ private void addUser() {
                 btnAddUserActionPerformed(evt);
             }
         });
-        jPanel1.add(btnAddUser, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 400, 220, 50));
+        jPanel1.add(btnAddUser, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 340, 220, 60));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1899,7 +1899,7 @@ private void addUser() {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
