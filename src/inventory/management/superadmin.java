@@ -134,6 +134,7 @@ public void delete_tblStock() {
     }
 }
 //Delete End
+//Transfer Functionlity
 public void transferSelectedItem() {
     try {
         int selectedRow = tblStock.getSelectedRow();
@@ -218,6 +219,7 @@ public void transferSelectedItem() {
     }
 }
 //END Transfer
+//Transfer Item from the Checking table
 public void transferCheckingItem(String sourceTable) {
     try {
         int selectedRow = tblChecking.getSelectedRow(); // Assuming you have a JTable for each source table
@@ -341,7 +343,8 @@ public void transferCheckingItem(String sourceTable) {
         System.err.println("Error during item transfer.");
     }
 }
-
+//End TransferChk
+//Display the from 
 public void displayReturnData() {
     DefaultTableModel model = (DefaultTableModel) tblReturn.getModel();
     model.setRowCount(0); // Clear existing rows
