@@ -1,6 +1,10 @@
 package inventory.management;
 
 
+
+import java.beans.Statement;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -29,9 +33,10 @@ public class superadmin extends javax.swing.JFrame {
     ResultSet rst = null;
 
 public superadmin() {
+    
         initComponents();
         conn = DBConnection.connectDB();
-        
+        setExtendedState(superadmin.MAXIMIZED_BOTH); 
         //Table Sizes
         tblDataInfo.getColumnModel().getColumn(0).setPreferredWidth(15);
         tblDataInfo.getColumnModel().getColumn(1).setPreferredWidth(30);
@@ -213,32 +218,40 @@ public void transferSelectedItem() {
     }
 }
 //END Transfer
-public void transferCheckingItem() {
+public void transferCheckingItem(String sourceTable) {
     try {
-        int selectedRow = tblChecking.getSelectedRow();
+        int selectedRow = tblChecking.getSelectedRow(); // Assuming you have a JTable for each source table
 
         if (selectedRow == -1) {
-            JOptionPane.showMessageDialog(this, "Please select an item to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Please select an item to transfer from the " + sourceTable + " table.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-        
-        int itemID = (int) tblChecking.getValueAt(selectedRow, 0);
-        int currentQty = (int) tblChecking.getValueAt(selectedRow, 7); // Assuming quantity is at index 8
 
-        String quantityStr = JOptionPane.showInputDialog(this, "Enter quantity to transfer:", "Transfer Quantity", JOptionPane.PLAIN_MESSAGE);
-
-        if (quantityStr == null || quantityStr.trim().isEmpty()) {
-            return; // User canceled or entered an empty quantity
+        int itemID = -1;
+        int checkedQty = -1;
+        // Assuming different tables have different column indices for ItemID and Qty
+        switch (sourceTable) {
+            case "Checking":
+                itemID = (int) tblChecking.getValueAt(selectedRow, 1); // Assuming ItemID is at index 1 in Checking table
+                checkedQty = (int) tblChecking.getValueAt(selectedRow, 7); // Assuming Qty is at index 7 in Checking table
+                break;
+            case "Return":
+                itemID = (int) tblReturn.getValueAt(selectedRow, 1); // Assuming ItemID is at index 1 in Return table
+                checkedQty = (int) tblReturn.getValueAt(selectedRow, 7); // Assuming CheckedQty is at index 7 in Return table
+                break;
+            case "Repair":
+                itemID = (int) tblRepair.getValueAt(selectedRow, 1); // Assuming ItemID is at index 1 in Repair table
+                checkedQty = (int) tblRepair.getValueAt(selectedRow, 7); // Assuming CheckedQty is at index 7 in Repair table
+                break;
+            case "Disposal":
+                itemID = (int) tblDisposal.getValueAt(selectedRow, 1); // Assuming ItemID is at index 1 in Disposal table
+                checkedQty = (int) tblDisposal.getValueAt(selectedRow, 7); // Assuming CheckedQty is at index 7 in Disposal table
+                break;
+            // Add cases for Repair and Disposal tables if needed
         }
-        
-        int transferQty = Integer.parseInt(quantityStr);
 
-        if (transferQty <= 0 || transferQty > currentQty) {
-            JOptionPane.showMessageDialog(this, "Invalid quantity to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
         // Combo box for selecting the destination area
-        JComboBox<String> areaComboBox = new JComboBox<>(new String[]{"Stock", "Return", "Repair", "Disposal"});
+        JComboBox<String> areaComboBox = new JComboBox<>(new String[]{"Checking", "Return", "Repair", "Disposal"});
         JLabel areaLabel = new JLabel("Select the destination area:");
         Object[] areaDialog = {areaLabel, areaComboBox};
 
@@ -248,54 +261,219 @@ public void transferCheckingItem() {
             return; // User canceled
         }
 
-        int selectedAreaIndex = areaComboBox.getSelectedIndex();
-        String selectedArea = getDestinationTableName(selectedAreaIndex);
+        String selectedArea = (String) areaComboBox.getSelectedItem();
 
-        // Input dialog for the transfer date
+        // Input dialog for the return date
         SpinnerDateModel dateModel = new SpinnerDateModel();
         JSpinner dateSpinner = new JSpinner(dateModel);
         dateSpinner.setEditor(new JSpinner.DateEditor(dateSpinner, "yyyy-MM-dd"));
-        JLabel dateLabel = new JLabel("Select the transfer date:");
+        JLabel dateLabel = new JLabel("Select the return date:");
         Object[] dateDialog = {dateLabel, dateSpinner};
 
-        int dateOption = JOptionPane.showConfirmDialog(this, dateDialog, "Select Transfer Date", JOptionPane.OK_CANCEL_OPTION);
+        int dateOption = JOptionPane.showConfirmDialog(this, dateDialog, "Select Return Date", JOptionPane.OK_CANCEL_OPTION);
 
         if (dateOption == JOptionPane.CANCEL_OPTION) {
             return; // User canceled
         }
 
-        java.sql.Date transferDate = new java.sql.Date(((java.util.Date) dateSpinner.getValue()).getTime());
+        java.sql.Date returnDate = new java.sql.Date(((java.util.Date) dateSpinner.getValue()).getTime());
 
-        String message = "Are you sure you want to transfer " + transferQty + " items?";
+        String message = "Are you sure you want to transfer this item from the " + sourceTable + " table to the " + selectedArea + " table?";
         int option = JOptionPane.showConfirmDialog(this, message, "Confirmation", JOptionPane.YES_NO_OPTION);
 
         if (option == JOptionPane.YES_OPTION) {
-            // Update quantity in the Stock table
-            String updateSql = "UPDATE Checking SET Qty = ? WHERE ItemID = ?";
-            try (PreparedStatement updatePst = conn.prepareStatement(updateSql)) {
-                updatePst.setInt(1, currentQty - transferQty);
-                updatePst.setInt(2, itemID);
-                updatePst.executeUpdate();
-            }
-
-            // Insert a new record into the destination table
-            String insertSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
-            try (PreparedStatement insertPst = conn.prepareStatement(insertSql)) {
+            // Insert a new record into the selected destination table
+            String insertSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, ReturnDate) VALUES (?, ?, ?)";
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+                 PreparedStatement insertPst = conn.prepareStatement(insertSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 insertPst.setInt(1, itemID);
-                insertPst.setInt(2, transferQty);
-                insertPst.setDate(3, transferDate);
+                insertPst.setInt(2, checkedQty);
+                insertPst.setDate(3, returnDate);
                 insertPst.executeUpdate();
+
+                // Retrieve generated ReturnID
+                ResultSet rs = insertPst.getGeneratedKeys();
+                int returnID = -1;
+                if (rs.next()) {
+                    returnID = rs.getInt(1);
+                }
+
+                // Display information
+                JOptionPane.showMessageDialog(this, "Transfer completed successfully.\n\n"
+                        + "ReturnID: " + returnID + "\n"
+                        + "ItemID: " + itemID + "\n"
+                        + "Serial Number: " + getItemSerialNumber(itemID) + "\n"
+                        + "Item Name: " + getItemName(itemID) + "\n"
+                        + "Category: " + getCategory(itemID) + "\n"
+                        + "Brand: " + getBrand(itemID) + "\n"
+                        + "Status: " + getStatus(itemID) + "\n"
+                        + "Checked Quantity: " + checkedQty + "\n"
+                        + "Return Date: " + returnDate.toString(), "Success", JOptionPane.INFORMATION_MESSAGE);
             }
 
-            JOptionPane.showMessageDialog(this, "Transfer completed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            displayCombinedData(); // Refresh the JTable after transfer
-            displayCheckingData(); // Display Checking data
+            // Remove the item from the source table
+            String deleteSql = "DELETE FROM " + sourceTable + " WHERE ItemID = ?";
+            try (Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+                 PreparedStatement deletePst = conn.prepareStatement(deleteSql)) {
+                deletePst.setInt(1, itemID);
+                deletePst.executeUpdate();
+            }
+
+            // Refresh the corresponding table after transfer
+            switch (sourceTable) {
+                case "Checking":
+                    displayCheckingData();
+                    break;
+                case "Return":
+                    displayReturnData();
+                    break;
+                case "Repair":
+                    displayRepairData();
+                    break;
+                case "Disposal":
+                    displayDisposalData();
+                    break;
+                // Add cases for Repair and Disposal tables if needed
+            }
         }
-    } catch (SQLException | NumberFormatException e) {
+    } catch (SQLException e) {
         e.printStackTrace();
         System.err.println("Error during item transfer.");
     }
 }
+
+public void displayReturnData() {
+    DefaultTableModel model = (DefaultTableModel) tblReturn.getModel();
+    model.setRowCount(0); // Clear existing rows
+
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+
+        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, c.Qty AS CheckedQty, r.Qty AS ReturnedQty, r.ReturnDate " +
+                     "FROM Return r " +
+                     "INNER JOIN Checking c ON r.ItemID = c.ItemID " +
+                     "INNER JOIN Stock s ON r.ItemID = s.ItemID";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int returnID = rst.getInt("ReturnID");
+                int itemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                String status = rst.getString("Status");
+                int checkedQty = rst.getInt("CheckedQty");
+                int returnedQty = rst.getInt("ReturnedQty");
+                Date returnDate = rst.getDate("ReturnDate");
+
+                // Add a row to the table with all the information
+                model.addRow(new Object[]{returnID, itemID, serialNumber, itemName, category, brand, status, checkedQty, returnedQty, returnDate});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving return data from the database.");
+    }
+}
+private String getItemSerialNumber(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT SerialNo FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("SerialNo");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item serial number.");
+    }
+    return null;
+}
+
+private String getItemName(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT ItemName FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("ItemName");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item name.");
+    }
+    return null;
+}
+
+private String getCategory(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Category FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Category");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item category.");
+    }
+    return null;
+}
+
+private String getBrand(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Brand FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Brand");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item brand.");
+    }
+    return null;
+}
+
+private String getStatus(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Status FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Status");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item status.");
+    }
+    return null;
+}
+
 
 private void transferItems(int itemID, int currentQty, int transferQty, String sourceTable, String sourceArea, String destinationTable, String destinationArea, java.sql.Date transferDate) {
     try {
@@ -335,7 +513,7 @@ public void displayCombinedData() {
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Status, s.Qty, " +
                      "c.Date AS CheckingDate " +
                      "FROM Stock s " +
-                     "LEFT JOIN Checking c ON s.ItemID = c.ItemID ";
+                     "RIGHT JOIN Checking c ON s.ItemID = c.ItemID ";
 
         try (PreparedStatement pst = conn.prepareStatement(sql);
              ResultSet rst = pst.executeQuery()) {
@@ -450,12 +628,12 @@ public void displayCheckingData() {
         System.err.println("Error retrieving Checking data from the database.");
     }
 }
-public void displayReturnData() {
+public void displayReturndata() {
     DefaultTableModel returnModel = (DefaultTableModel) tblReturn.getModel();
     returnModel.setRowCount(0); // Clear existing rows
 
     try {
-        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, r.Qty AS ReturnedQty, r.Date " +
+        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, r.Qty AS ReturnedQty, r.ReturnDate " +
                      "FROM Return r " +
                      "LEFT JOIN Stock s ON r.ItemID = s.ItemID ";
 
@@ -471,7 +649,7 @@ public void displayReturnData() {
                 String brand = rst.getString("Brand");
                 String status = rst.getString("Status");
                 int returnedQty = rst.getInt("ReturnedQty");
-                Date date = rst.getDate("Date");
+                Date date = rst.getDate("ReturnDate");
 
                 // Add a row to the Return table with all the information
                 returnModel.addRow(new Object[]{returnID, itemID, serialNo, itemName, category, brand, status, returnedQty, date});
@@ -489,7 +667,7 @@ public void displayRepairData() {
 
     try {
         // Modify the SQL query for Repair area
-        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, rep.Qty AS RepairedQty, rep.Date " +
+        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, rep.Qty AS RepairedQty, rep.RepairDate " +
                      "FROM Repair rep " +
                      "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
 
@@ -505,7 +683,7 @@ public void displayRepairData() {
                 String brand = rst.getString("Brand");
                 String status = rst.getString("Status");
                 int repairedQty = rst.getInt("RepairedQty");
-                Date date = rst.getDate("Date");
+                Date date = rst.getDate("RepairDate");
 
                 // Add a row to the Repair table with all the information
                 repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, category, brand, status, repairedQty, date});
@@ -567,7 +745,9 @@ public void clear(){
         txtItemName.setText("");
         txtModel.setText("");
         txtSpecification.setText("");
+        cbSCategory.setSelectedIndex(0);
         txtBrand.setText("");
+        cbSStatus.setSelectedIndex(0);
         txtQty.setText("");
     } 
     //Display data from database to ADD form table
@@ -655,47 +835,70 @@ public void displayStockItems() {
     //Display Checking Records
  
 private void addUser() {
-        String username = txtUserName.getText();
-        String password = new String(txtPass.getPassword());
-        String accountType = (String) cbAccountType.getSelectedItem();
+    String username = txtUserName.getText();
+    String password = new String(txtPass.getPassword());
+    String accountType = (String) cbAccountType.getSelectedItem();
 
-        // Validation
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+    // Validation
+    if (username.isEmpty() || password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
-        // Database interaction (integrate this with your existing connection code)
+    // Hash the password
+    String hashedPassword = hashPassword(password);
+
+    // Database interaction (integrate this with your existing connection code)
+    try {
+        String query = "INSERT INTO Account (UserName, PassWord, AccountType) VALUES (?, ?, ?)";
+        pst = conn.prepareStatement(query);
+        pst.setString(1, username);
+        pst.setString(2, hashedPassword); // Store hashed password
+        pst.setString(3, accountType);
+        pst.executeUpdate();
+
+        JOptionPane.showMessageDialog(this, "User added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+        // Reset fields after successful addition
+        txtUserName.setText("");
+        txtPass.setText("");
+        cbAccountType.setSelectedIndex(0);
+        chkPass.setSelected(false);
+
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error adding user.", "Error", JOptionPane.ERROR_MESSAGE);
+    } finally {
+        // Close resources in a finally block
         try {
-            String query = "INSERT INTO Account (UserName, PassWord, AccountType) VALUES (?, ?, ?)";
-            pst = conn.prepareStatement(query);
-            pst.setString(1, username);
-            pst.setString(2, password);
-            pst.setString(3, accountType);
-            pst.executeUpdate();
-
-            JOptionPane.showMessageDialog(this, "User added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-
-            // Reset fields after successful addition
-            txtUserName.setText("");
-            txtPass.setText("");
-            cbAccountType.setSelectedIndex(0);
-            chkPass.setSelected(false);
-
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error adding user.", "Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            // Close resources in a finally block
-            try {
-                if (pst != null) {
-                    pst.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+            if (pst != null) {
+                pst.close();
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
+}
+
+private String hashPassword(String password) {
+    try {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hashBytes = digest.digest(password.getBytes());
+
+        // Convert bytes to hexadecimal representation
+        StringBuilder hexString = new StringBuilder();
+        for (byte hashByte : hashBytes) {
+            String hex = Integer.toHexString(0xff & hashByte);
+            if (hex.length() == 1)
+                hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    } catch (NoSuchAlgorithmException e) {
+        e.printStackTrace();
+        return null;
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -772,7 +975,7 @@ private void addUser() {
         tblChecking = new javax.swing.JTable();
         txtSearch3 = new javax.swing.JTextField();
         btnDelete3 = new javax.swing.JButton();
-        btnTransfer3 = new javax.swing.JButton();
+        btnTransferChk = new javax.swing.JButton();
         btnSearch3 = new javax.swing.JButton();
         jPanel16 = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
@@ -780,21 +983,21 @@ private void addUser() {
         btnSearch2 = new javax.swing.JButton();
         txtSearch2 = new javax.swing.JTextField();
         btnDelete2 = new javax.swing.JButton();
-        btnTransfer2 = new javax.swing.JButton();
+        btnTransferRtn = new javax.swing.JButton();
         jPanel17 = new javax.swing.JPanel();
         jScrollPane5 = new javax.swing.JScrollPane();
         tblRepair = new javax.swing.JTable();
         btnSearch4 = new javax.swing.JButton();
         txtSearch4 = new javax.swing.JTextField();
         btnDelete4 = new javax.swing.JButton();
-        btnTransfer4 = new javax.swing.JButton();
+        btnTransferRpr = new javax.swing.JButton();
         jPanel18 = new javax.swing.JPanel();
         jScrollPane6 = new javax.swing.JScrollPane();
         tblDisposal = new javax.swing.JTable();
         btnSearch5 = new javax.swing.JButton();
         txtSearch5 = new javax.swing.JTextField();
         btnDelete5 = new javax.swing.JButton();
-        btnTransfer5 = new javax.swing.JButton();
+        btnTransferDps = new javax.swing.JButton();
         btnStock = new javax.swing.JButton();
         btnChecking = new javax.swing.JButton();
         btnReturn = new javax.swing.JButton();
@@ -816,13 +1019,14 @@ private void addUser() {
 
         btnDashboard.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnDashboard.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/menu icon.png"))); // NOI18N
-        btnDashboard.setText("Dashboard");
+        btnDashboard.setText("  Dashboard");
+        btnDashboard.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnDashboard.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnDashboardActionPerformed(evt);
             }
         });
-        jPanel1.add(btnDashboard, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 200, 220, 60));
+        jPanel1.add(btnDashboard, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 200, 240, 60));
 
         jPanel5.setBackground(new java.awt.Color(51, 51, 51));
 
@@ -1044,60 +1248,61 @@ private void addUser() {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(20, 20, 20)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel18)
                             .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGap(24, 24, 24)
-                                .addComponent(jLabel4)))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 192, Short.MAX_VALUE)
-                            .addComponent(txtSerial)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(txtModel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                        .addComponent(jLabel15)
-                                        .addGap(18, 18, 18))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                                .addGap(13, 13, 13)
-                                                .addComponent(jLabel6))
-                                            .addComponent(jLabel5)
-                                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                                .addGap(11, 11, 11)
-                                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(jLabel9)
-                                                    .addGroup(jPanel3Layout.createSequentialGroup()
-                                                        .addGap(1, 1, 1)
-                                                        .addComponent(jLabel10))
-                                                    .addComponent(jLabel8)
-                                                    .addComponent(jLabel7))))
-                                        .addGap(25, 25, 25)))
+                                .addGap(20, 20, 20)
                                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(cbSCategory, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(cbSStatus, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(txtSpecification, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(txtItemName)
-                                    .addComponent(txtBrand, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(txtQty, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel18, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jTextField1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtSerial, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(btnView, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(txtEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtModel, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(jLabel7)
+                                        .addGroup(jPanel3Layout.createSequentialGroup()
+                                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                                .addGroup(jPanel3Layout.createSequentialGroup()
+                                                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(jLabel5)
+                                                        .addComponent(jLabel6))
+                                                    .addGap(25, 25, 25))
+                                                .addGroup(jPanel3Layout.createSequentialGroup()
+                                                    .addComponent(jLabel15)
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED))
+                                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
+                                                    .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                                        .addComponent(jLabel8, javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(jLabel9, javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.LEADING))
+                                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
+                                            .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                                .addComponent(cbSCategory, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(cbSStatus, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .addComponent(txtSpecification, javax.swing.GroupLayout.Alignment.TRAILING)
+                                                .addComponent(txtItemName)
+                                                .addComponent(txtBrand, javax.swing.GroupLayout.Alignment.TRAILING)
+                                                .addComponent(txtQty, javax.swing.GroupLayout.PREFERRED_SIZE, 192, javax.swing.GroupLayout.PREFERRED_SIZE)))))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(80, 80, 80)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
                                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(jPanel3Layout.createSequentialGroup()
-                                        .addComponent(txtClear, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(txtInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addComponent(txtInsert1, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))))))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                    .addComponent(txtEdit, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtClear, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtInsert, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtInsert1, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGap(46, 46, 46)
+                                .addComponent(btnView, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 661, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(20, 20, 20))
         );
@@ -1108,53 +1313,56 @@ private void addUser() {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jLabel13)
                 .addGap(42, 42, 42)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel4))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGap(15, 15, 15)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel18)
                             .addComponent(txtSerial, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                        .addGap(15, 15, 15)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel5)
                             .addComponent(txtItemName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(10, 10, 10)
+                        .addGap(15, 15, 15)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel6)
                             .addComponent(txtModel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                        .addGap(15, 15, 15)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(txtSpecification, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel15))
-                        .addGap(27, 27, 27)
+                        .addGap(15, 15, 15)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel7)
+                            .addComponent(cbSCategory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(15, 15, 15)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(cbSCategory, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel7))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(cbSStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addComponent(cbSStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(15, 15, 15))
                             .addGroup(jPanel3Layout.createSequentialGroup()
                                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(jLabel8)
                                     .addComponent(txtBrand, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGap(18, 18, 18)
-                                .addComponent(jLabel9)))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel10)
-                            .addComponent(txtQty, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                                .addComponent(jLabel9)
+                                .addGap(12, 12, 12)))
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtQty, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel10))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(txtInsert)
-                            .addComponent(txtClear)
-                            .addComponent(btnView))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                            .addComponent(txtClear))
+                        .addGap(9, 9, 9)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(txtInsert1)
-                            .addComponent(txtEdit)))
+                            .addComponent(txtEdit)
+                            .addComponent(txtInsert1))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnView))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 485, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(15, Short.MAX_VALUE))
         );
@@ -1449,11 +1657,11 @@ private void addUser() {
             }
         });
 
-        btnTransfer3.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnTransfer3.setText("Transfer");
-        btnTransfer3.addActionListener(new java.awt.event.ActionListener() {
+        btnTransferChk.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        btnTransferChk.setText("Transfer");
+        btnTransferChk.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnTransfer3ActionPerformed(evt);
+                btnTransferChkActionPerformed(evt);
             }
         });
 
@@ -1465,7 +1673,7 @@ private void addUser() {
             jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel15Layout.createSequentialGroup()
                 .addContainerGap(630, Short.MAX_VALUE)
-                .addComponent(btnTransfer3)
+                .addComponent(btnTransferChk)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnDelete3)
                 .addGap(3, 3, 3)
@@ -1486,7 +1694,7 @@ private void addUser() {
                     .addGroup(jPanel15Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(txtSearch3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(btnDelete3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnTransfer3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnTransferChk, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch3, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 498, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1531,11 +1739,11 @@ private void addUser() {
             }
         });
 
-        btnTransfer2.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnTransfer2.setText("Transfer");
-        btnTransfer2.addActionListener(new java.awt.event.ActionListener() {
+        btnTransferRtn.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        btnTransferRtn.setText("Transfer");
+        btnTransferRtn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnTransfer2ActionPerformed(evt);
+                btnTransferRtnActionPerformed(evt);
             }
         });
 
@@ -1545,7 +1753,7 @@ private void addUser() {
             jPanel16Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel16Layout.createSequentialGroup()
                 .addContainerGap(630, Short.MAX_VALUE)
-                .addComponent(btnTransfer2)
+                .addComponent(btnTransferRtn)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnDelete2)
                 .addGap(3, 3, 3)
@@ -1565,7 +1773,7 @@ private void addUser() {
                     .addGroup(jPanel16Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(txtSearch2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(btnDelete2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnTransfer2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnTransferRtn, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 497, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1607,11 +1815,11 @@ private void addUser() {
             }
         });
 
-        btnTransfer4.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnTransfer4.setText("Transfer");
-        btnTransfer4.addActionListener(new java.awt.event.ActionListener() {
+        btnTransferRpr.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        btnTransferRpr.setText("Transfer");
+        btnTransferRpr.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnTransfer4ActionPerformed(evt);
+                btnTransferRprActionPerformed(evt);
             }
         });
 
@@ -1623,7 +1831,7 @@ private void addUser() {
                 .addGroup(jPanel17Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel17Layout.createSequentialGroup()
                         .addGap(0, 630, Short.MAX_VALUE)
-                        .addComponent(btnTransfer4)
+                        .addComponent(btnTransferRpr)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnDelete4)
                         .addGap(3, 3, 3)
@@ -1643,7 +1851,7 @@ private void addUser() {
                     .addGroup(jPanel17Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(txtSearch4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(btnDelete4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnTransfer4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnTransferRpr, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 494, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1685,11 +1893,11 @@ private void addUser() {
             }
         });
 
-        btnTransfer5.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnTransfer5.setText("Transfer");
-        btnTransfer5.addActionListener(new java.awt.event.ActionListener() {
+        btnTransferDps.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        btnTransferDps.setText("Transfer");
+        btnTransferDps.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnTransfer5ActionPerformed(evt);
+                btnTransferDpsActionPerformed(evt);
             }
         });
 
@@ -1701,7 +1909,7 @@ private void addUser() {
                 .addGroup(jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel18Layout.createSequentialGroup()
                         .addGap(374, 630, Short.MAX_VALUE)
-                        .addComponent(btnTransfer5)
+                        .addComponent(btnTransferDps)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnDelete5)
                         .addGap(3, 3, 3)
@@ -1719,7 +1927,7 @@ private void addUser() {
                     .addGroup(jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(txtSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(btnDelete5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addComponent(btnTransfer5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(btnTransferDps, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 490, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -1854,23 +2062,25 @@ private void addUser() {
 
         btnAdd.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnAdd.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/plus icon.png"))); // NOI18N
-        btnAdd.setText("Add Item");
+        btnAdd.setText("  Add Item");
+        btnAdd.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnAdd.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAddActionPerformed(evt);
             }
         });
-        jPanel1.add(btnAdd, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 270, 220, 60));
+        jPanel1.add(btnAdd, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 270, 240, 60));
 
         btnRecords.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnRecords.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/records icon.png"))); // NOI18N
-        btnRecords.setText("Records");
+        btnRecords.setText("  Records");
+        btnRecords.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnRecords.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRecordsActionPerformed(evt);
             }
         });
-        jPanel1.add(btnRecords, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 410, 220, 60));
+        jPanel1.add(btnRecords, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 410, 240, 60));
 
         btnLogout.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnLogout.setText("LOG OUT");
@@ -1883,13 +2093,14 @@ private void addUser() {
 
         btnAddUser.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         btnAddUser.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/user icon (2).png"))); // NOI18N
-        btnAddUser.setText("Add User");
+        btnAddUser.setText("  Add User");
+        btnAddUser.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         btnAddUser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAddUserActionPerformed(evt);
             }
         });
-        jPanel1.add(btnAddUser, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 340, 220, 60));
+        jPanel1.add(btnAddUser, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 340, 240, 60));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -1908,11 +2119,13 @@ private void addUser() {
     private void btnDashboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDashboardActionPerformed
         // TODO add your handling code here:
         tabPane.setSelectedIndex(0);
+        
     }//GEN-LAST:event_btnDashboardActionPerformed
 
     private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
         // TODO add your handling code here:
           tabPane.setSelectedIndex(1);
+          displayDataItems();
     }//GEN-LAST:event_btnAddActionPerformed
 
     private void btnRecordsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRecordsActionPerformed
@@ -1923,9 +2136,16 @@ private void addUser() {
 
     private void btnLogoutActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogoutActionPerformed
         // TODO add your handling code here:
-        JOptionPane.showMessageDialog(null,"Logout Successful");
-           new LogIn().setVisible(true);
+        int choice = JOptionPane.showConfirmDialog(null, "Are you sure you want to logout?", "Logout Confirmation", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+
+            JOptionPane.showMessageDialog(null, "Logout Successful");
+             new LogIn().setVisible(true);
             dispose();
+        } else {
+
+        }
+          
     }//GEN-LAST:event_btnLogoutActionPerformed
 
     private void txtBrandActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtBrandActionPerformed
@@ -1989,38 +2209,40 @@ private void addUser() {
         // TODO add your handling code here:
     }//GEN-LAST:event_btnDelete3ActionPerformed
 
-    private void btnTransfer3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransfer3ActionPerformed
+    private void btnTransferChkActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferChkActionPerformed
         // TODO add your handling code here:
-        transferCheckingItem();
+        transferCheckingItem("Checking");
 
-    }//GEN-LAST:event_btnTransfer3ActionPerformed
+    }//GEN-LAST:event_btnTransferChkActionPerformed
 
     private void btnDelete2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelete2ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnDelete2ActionPerformed
 
-    private void btnTransfer2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransfer2ActionPerformed
+    private void btnTransferRtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferRtnActionPerformed
         // TODO add your handling code here:
+        transferCheckingItem("Return");
  
-    }//GEN-LAST:event_btnTransfer2ActionPerformed
+    }//GEN-LAST:event_btnTransferRtnActionPerformed
 
     private void btnDelete4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelete4ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnDelete4ActionPerformed
 
-    private void btnTransfer4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransfer4ActionPerformed
+    private void btnTransferRprActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferRprActionPerformed
         // TODO add your handling code here:
+        transferCheckingItem("Repair");
 
-    }//GEN-LAST:event_btnTransfer4ActionPerformed
+    }//GEN-LAST:event_btnTransferRprActionPerformed
 
     private void btnDelete5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelete5ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_btnDelete5ActionPerformed
 
-    private void btnTransfer5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransfer5ActionPerformed
+    private void btnTransferDpsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTransferDpsActionPerformed
         // TODO add your handling code here:
-
-    }//GEN-LAST:event_btnTransfer5ActionPerformed
+        transferCheckingItem("Disposal");
+    }//GEN-LAST:event_btnTransferDpsActionPerformed
 
     private void btnStockActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnStockActionPerformed
         // TODO add your handling code here:
@@ -2037,7 +2259,7 @@ private void addUser() {
     private void btnReturnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReturnActionPerformed
         // TODO add your handling code here:
         tabSuperadmin.setSelectedIndex(2);
-        displayReturnData();
+        displayReturndata();
     }//GEN-LAST:event_btnReturnActionPerformed
 
     private void btnRepairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRepairActionPerformed
@@ -2132,10 +2354,10 @@ private void addUser() {
     private javax.swing.JButton btnSearch4;
     private javax.swing.JButton btnSearch5;
     private javax.swing.JButton btnStock;
-    private javax.swing.JButton btnTransfer2;
-    private javax.swing.JButton btnTransfer3;
-    private javax.swing.JButton btnTransfer4;
-    private javax.swing.JButton btnTransfer5;
+    private javax.swing.JButton btnTransferChk;
+    private javax.swing.JButton btnTransferDps;
+    private javax.swing.JButton btnTransferRpr;
+    private javax.swing.JButton btnTransferRtn;
     private javax.swing.JButton btnTransferStock;
     private javax.swing.JButton btnView;
     private javax.swing.JComboBox<String> cbAccountType;
