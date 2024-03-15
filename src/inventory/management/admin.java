@@ -947,9 +947,15 @@ public void displayStockItems() {
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
         // TODO add your handling code here:
-        JOptionPane.showMessageDialog(null,"Logout Successful");
-        new LogIn().setVisible(true);
-        dispose();
+         int choice = JOptionPane.showConfirmDialog(null, "Are you sure you want to logout?", "Logout Confirmation", JOptionPane.YES_NO_OPTION);
+        if (choice == JOptionPane.YES_OPTION) {
+
+            JOptionPane.showMessageDialog(null, "Logout Successful");
+             new LogIn().setVisible(true);
+            dispose();
+        } else {
+
+        }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed

@@ -37,59 +37,52 @@ public class LogIn extends javax.swing.JFrame {
         chkPass.setSelected(false);
     }
     private void login() {
-    String username = txtUsername.getText();
-    String password = new String(txtPassword.getPassword());
-    String accountType = (String) cbAccountType.getSelectedItem();
+        String username = txtUsername.getText();
+        String password = new String(txtPassword.getPassword());
+        String accountType = (String) cbAccountType.getSelectedItem();
 
-    // Validation
-    if (username.isEmpty() || password.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // Database interaction 
-    try {
-        String query = "SELECT * FROM Account WHERE UserName = ? AND AccountType = ?";
-        pst = conn.prepareStatement(query);
-        pst.setString(1, username);
-        pst.setString(2, accountType);
+        try {
+            String query = "SELECT * FROM Accounts WHERE UserName = ? AND AccountType = ?";
+            pst = conn.prepareStatement(query);
+            pst.setString(1, username);
+            pst.setString(2, accountType);
+            rst = pst.executeQuery();
 
-        rst = pst.executeQuery();
-
-        if (rst.next()) {
-            String storedHashedPassword = rst.getString("PassWord");
-            if (verifyPassword(password, storedHashedPassword)) {
-                // Successful login
-                JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
-                dispose(); // Close the login frame after successful login
-                openAppropriateFrame(accountType);
+            if (rst.next()) {
+                String storedHashedPassword = rst.getString("PassWord");
+                if (verifyPassword(password, storedHashedPassword)) {
+                    JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                    dispose();
+                    openAppropriateFrame(accountType);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+                    clear();
+                }
             } else {
-                // Invalid credentials
                 JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
                 clear();
             }
-        } else {
-            // Invalid credentials
-            JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
-            clear();
-        }
-    } catch (SQLException ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
-    } finally {
-        // Close resources in a finally block
-        try {
-            if (rst != null) {
-                rst.close();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-            if (pst != null) {
-                pst.close();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
-}
 
 private boolean verifyPassword(String password, String storedHashedPassword) {
     try {

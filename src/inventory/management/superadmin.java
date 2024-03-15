@@ -838,6 +838,9 @@ public void displayStockItems() {
     //Display Checking Records
  
 private void addUser() {
+    int employeeNum = Integer.parseInt(txtEmployeeNum.getText());
+    String firstName = txtFirstName.getText();
+    String lastName = txtLastName.getText();
     String username = txtUserName.getText();
     String password = new String(txtPass.getPassword());
     String accountType = (String) cbAccountType.getSelectedItem();
@@ -848,21 +851,33 @@ private void addUser() {
         return;
     }
 
+    // Confirmation dialog
+    int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to add this user?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (option != JOptionPane.YES_OPTION) {
+        return; // User selected No, so return without adding the user
+    }
+
     // Hash the password
     String hashedPassword = hashPassword(password);
 
     // Database interaction (integrate this with your existing connection code)
     try {
-        String query = "INSERT INTO Account (UserName, PassWord, AccountType) VALUES (?, ?, ?)";
+        String query = "INSERT INTO Accounts (EmployeeNo, FirstName, LastName, UserName, PassWord, AccountType) VALUES (?, ?, ?, ?, ?, ?)";
         pst = conn.prepareStatement(query);
-        pst.setString(1, username);
-        pst.setString(2, hashedPassword); // Store hashed password
-        pst.setString(3, accountType);
+        pst.setInt(1, employeeNum);
+        pst.setString(2, firstName);
+        pst.setString(3, lastName);
+        pst.setString(4, username);
+        pst.setString(5, hashedPassword); // Store hashed password
+        pst.setString(6, accountType);
         pst.executeUpdate();
 
         JOptionPane.showMessageDialog(this, "User added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-
+        displayAccountsData();
         // Reset fields after successful addition
+        txtEmployeeNum.setText("");
+        txtFirstName.setText("");
+        txtLastName.setText("");
         txtUserName.setText("");
         txtPass.setText("");
         cbAccountType.setSelectedIndex(0);
@@ -881,6 +896,48 @@ private void addUser() {
             e.printStackTrace();
         }
     }
+}
+// Define a method to fetch and display data from the accounts table
+private void displayAccountsData() {
+    DefaultTableModel model = new DefaultTableModel(); // Create a table model
+    model.addColumn("ID");
+    model.addColumn("Employee No");
+    model.addColumn("First Name");
+    model.addColumn("Last Name");
+    model.addColumn("Username");
+    model.addColumn("Password");
+    model.addColumn("Account Type");
+
+    try {
+        // Query to fetch data from the accounts table
+        String query = "SELECT ID, EmployeeNo, FirstName, LastName, UserName,PassWord, AccountType FROM Accounts";
+        PreparedStatement pst = conn.prepareStatement(query);
+        ResultSet rs = pst.executeQuery();
+
+        // Loop through the result set and add rows to the table model
+        while (rs.next()) {
+            Object[] row = {
+                rs.getInt("ID"),
+                rs.getInt("EmployeeNo"),
+                rs.getString("FirstName"),
+                rs.getString("LastName"),
+                rs.getString("UserName"),
+                rs.getString("PassWord"),
+                rs.getString("AccountType")
+            };
+            model.addRow(row);
+        }
+
+        // Close resources
+        pst.close();
+        rs.close();
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error fetching accounts data.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    // Set the table model to the JTable for display
+    tblAccounts.setModel(model);
 }
 
 private String hashPassword(String password) {
@@ -902,6 +959,166 @@ private String hashPassword(String password) {
         return null;
     }
 }
+// Define a method to populate the user data into the input fields for editing
+private void editUserTable() {
+    int selectedRow = tblAccounts.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a user to edit.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // Retrieve data from the selected row
+    int id = (int) tblAccounts.getValueAt(selectedRow, 0);
+    int employeeNum = (int) tblAccounts.getValueAt(selectedRow, 1);
+    String firstName = (String) tblAccounts.getValueAt(selectedRow, 2);
+    String lastName = (String) tblAccounts.getValueAt(selectedRow, 3);
+    String username = (String) tblAccounts.getValueAt(selectedRow, 4);
+    String password = (String) tblAccounts.getValueAt(selectedRow, 5);
+    String accountType = (String) tblAccounts.getValueAt(selectedRow, 6);
+
+    // Prompt for confirmation before editing
+    int option = JOptionPane.showConfirmDialog(this, "Do you want to edit this user?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (option != JOptionPane.YES_OPTION) {
+        return; // User selected No, so return without editing the user
+    }
+
+    // Populate data into input fields
+    txtEmployeeNum.setText(String.valueOf(employeeNum));
+    txtFirstName.setText(firstName);
+    txtLastName.setText(lastName);
+    txtUserName.setText(username);
+    // Allow editing of the password field
+    txtPass.setText(password);
+    cbAccountType.setSelectedItem(accountType);
+
+    // Enable the "Save" button for confirming changes
+    btnSave.setEnabled(true);
+}
+// Define a method for the "Save" button to confirm changes
+
+private void saveUserChanges() {
+    // Retrieve edited data from input fields
+    int selectedRow = tblAccounts.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a user to edit.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    int employeeNum = Integer.parseInt(txtEmployeeNum.getText());
+    String firstName = txtFirstName.getText();
+    String lastName = txtLastName.getText();
+    String username = txtUserName.getText();
+    String newPassword = new String(txtPass.getPassword()); // New password entered by user
+    String accountType = (String) cbAccountType.getSelectedItem();
+
+    // Validation
+    if (username.isEmpty() || newPassword.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // Confirmation dialog
+    int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to save changes?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (option != JOptionPane.YES_OPTION) {
+        return; // User selected No, so return without saving changes
+    }
+
+    // Hash the new password
+    String hashedPassword = hashPassword(newPassword);
+
+    // Database interaction to update user data
+    try {
+        String query = "UPDATE Accounts SET EmployeeNo=?, FirstName=?, LastName=?, UserName=?, PassWord=?, AccountType=? WHERE ID=?";
+        pst = conn.prepareStatement(query);
+        pst.setInt(1, employeeNum);
+        pst.setString(2, firstName);
+        pst.setString(3, lastName);
+        pst.setString(4, username);
+        pst.setString(5, hashedPassword); // Store hashed password
+        pst.setString(6, accountType);
+        pst.executeUpdate();
+
+        JOptionPane.showMessageDialog(this, "Changes saved successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        displayAccountsData(); // Refresh the Accounts table after saving changes
+
+        // Reset fields and disable Save button
+        clearUserFields();
+        btnSave.setEnabled(false);
+
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error saving changes.", "Error", JOptionPane.ERROR_MESSAGE);
+    } finally {
+        // Close resources in a finally block
+        try {
+            if (pst != null) {
+                pst.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+//Delete User functionality
+private void deleteUser() {
+    int selectedRow = tblAccounts.getSelectedRow();
+    if (selectedRow == -1) {
+        JOptionPane.showMessageDialog(this, "Please select a user to delete.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    int userId = (int) tblAccounts.getValueAt(selectedRow, 0); // ID from the table
+
+    // Confirmation dialog
+    int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this user?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (option != JOptionPane.YES_OPTION) {
+        return; // User selected No, so return without deleting
+    }
+
+    // Database interaction to delete user data
+    try {
+        String query = "DELETE FROM Accounts WHERE ID=?";
+        pst = conn.prepareStatement(query);
+        pst.setInt(1, userId);
+        int rowsAffected = pst.executeUpdate();
+
+        if (rowsAffected > 0) {
+            JOptionPane.showMessageDialog(this, "User deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+
+            // Remove the selected row from the JTable
+            DefaultTableModel model = (DefaultTableModel) tblAccounts.getModel();
+            model.removeRow(selectedRow);
+        } else {
+            JOptionPane.showMessageDialog(this, "Failed to delete user.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error deleting user.", "Error", JOptionPane.ERROR_MESSAGE);
+    } finally {
+        // Close resources in a finally block
+        try {
+            if (pst != null) {
+                pst.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+//Clear the Add User Fields
+private void clearUserFields() {
+    txtEmployeeNum.setText("");
+    txtFirstName.setText("");
+    txtLastName.setText("");
+    txtUserName.setText("");
+    txtPass.setText("");
+    cbAccountType.setSelectedIndex(0);
+}
+
+// Call this method when the "Save" button is clicked to confirm and save changes
+// Ensure the selectedUserId variable is set appropriately when editing a user
+
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -960,6 +1177,20 @@ private String hashPassword(String password) {
         txtPass = new javax.swing.JPasswordField();
         chkPass = new javax.swing.JCheckBox();
         jLabel20 = new javax.swing.JLabel();
+        jScrollPane7 = new javax.swing.JScrollPane();
+        tblAccounts = new javax.swing.JTable();
+        jLabel21 = new javax.swing.JLabel();
+        jLabel22 = new javax.swing.JLabel();
+        txtLastName = new javax.swing.JTextField();
+        txtFirstName = new javax.swing.JTextField();
+        txtEmployeeNum = new javax.swing.JTextField();
+        jLabel23 = new javax.swing.JLabel();
+        btnSaveUser1 = new javax.swing.JButton();
+        btnSaveUser2 = new javax.swing.JButton();
+        btnClear = new javax.swing.JButton();
+        btnSave = new javax.swing.JButton();
+        btnViewUser = new javax.swing.JButton();
+        jLabel24 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         jPanel7 = new javax.swing.JPanel();
         jLabel14 = new javax.swing.JLabel();
@@ -1051,7 +1282,7 @@ private String hashPassword(String password) {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(15, Short.MAX_VALUE))
+                .addGap(29, 29, 29))
         );
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
@@ -1066,7 +1297,7 @@ private String hashPassword(String password) {
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 585, Short.MAX_VALUE))
+                .addGap(0, 571, Short.MAX_VALUE))
         );
 
         tabPane.addTab("tab1", jPanel2);
@@ -1396,7 +1627,7 @@ private String hashPassword(String password) {
 
         btnSaveUser.setBackground(new java.awt.Color(0, 153, 153));
         btnSaveUser.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        btnSaveUser.setText("Save");
+        btnSaveUser.setText("Add");
         btnSaveUser.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSaveUserActionPerformed(evt);
@@ -1417,87 +1648,247 @@ private String hashPassword(String password) {
 
         jLabel20.setText("ShowPassword");
 
+        tblAccounts.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
+            },
+            new String [] {
+                "ID", "EmployeeNo", "FirstName", "LastName", "Username", "Password", "AccountType"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        jScrollPane7.setViewportView(tblAccounts);
+        if (tblAccounts.getColumnModel().getColumnCount() > 0) {
+            tblAccounts.getColumnModel().getColumn(0).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(1).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(2).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(3).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(4).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(5).setResizable(false);
+            tblAccounts.getColumnModel().getColumn(6).setResizable(false);
+        }
+
+        jLabel21.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel21.setText("Employee No.");
+
+        jLabel22.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel22.setText("First Name");
+
+        txtLastName.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtLastNameActionPerformed(evt);
+            }
+        });
+
+        jLabel23.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel23.setText("Last Name");
+
+        btnSaveUser1.setBackground(new java.awt.Color(0, 153, 153));
+        btnSaveUser1.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnSaveUser1.setText("Edit");
+        btnSaveUser1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveUser1ActionPerformed(evt);
+            }
+        });
+
+        btnSaveUser2.setBackground(new java.awt.Color(0, 153, 153));
+        btnSaveUser2.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnSaveUser2.setText("Delete");
+        btnSaveUser2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveUser2ActionPerformed(evt);
+            }
+        });
+
+        btnClear.setBackground(new java.awt.Color(0, 153, 153));
+        btnClear.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnClear.setText("Clear");
+        btnClear.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnClearActionPerformed(evt);
+            }
+        });
+
+        btnSave.setBackground(new java.awt.Color(0, 153, 153));
+        btnSave.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnSave.setText("Save");
+        btnSave.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSaveActionPerformed(evt);
+            }
+        });
+
+        btnViewUser.setBackground(new java.awt.Color(0, 153, 153));
+        btnViewUser.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
+        btnViewUser.setText("View");
+        btnViewUser.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnViewUserActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
         jPanel11.setLayout(jPanel11Layout);
         jPanel11Layout.setHorizontalGroup(
             jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel11Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 274, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(86, 86, 86))
             .addGroup(jPanel11Layout.createSequentialGroup()
-                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addGroup(jPanel11Layout.createSequentialGroup()
-                            .addContainerGap()
-                            .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 276, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel11Layout.createSequentialGroup()
-                            .addGap(86, 86, 86)
-                            .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel12)
-                                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(jLabel16, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel11Layout.createSequentialGroup()
-                                        .addComponent(jLabel11)
-                                        .addGap(205, 205, 205))
-                                    .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGroup(jPanel11Layout.createSequentialGroup()
-                                        .addGap(6, 6, 6)
-                                        .addComponent(chkPass)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                        .addComponent(jLabel20)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(btnSaveUser, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)))))))
-                .addContainerGap(79, Short.MAX_VALUE))
+                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel11Layout.createSequentialGroup()
+                        .addGap(335, 335, 335)
+                        .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 274, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel11Layout.createSequentialGroup()
+                        .addGap(15, 15, 15)
+                        .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel21, javax.swing.GroupLayout.PREFERRED_SIZE, 107, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(26, 26, 26)
+                                .addComponent(txtEmployeeNum, javax.swing.GroupLayout.PREFERRED_SIZE, 267, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel22)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(27, 27, 27)
+                                .addComponent(txtFirstName, javax.swing.GroupLayout.PREFERRED_SIZE, 266, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel23)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(18, 18, 18)
+                                .addComponent(txtLastName, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel11)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(18, 18, 18)
+                                .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel12)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(18, 18, 18)
+                                .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel16)
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(16, 16, 16)
+                                .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, 277, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(chkPass)
+                                .addGap(6, 6, 6)
+                                .addComponent(jLabel20))
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(btnSaveUser2)
+                                .addGap(15, 15, 15)
+                                .addComponent(btnClear, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnSaveUser, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel11Layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(btnSaveUser1, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(btnSave, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(btnViewUser, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 665, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(14, 14, 14))
         );
         jPanel11Layout.setVerticalGroup(
             jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel11Layout.createSequentialGroup()
-                .addGap(48, 48, 48)
+                .addGap(5, 5, 5)
                 .addComponent(jLabel17, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(38, 38, 38)
-                .addComponent(jLabel11)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(12, 12, 12)
-                .addComponent(jLabel12)
-                .addGap(8, 8, 8)
-                .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jLabel16)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnSaveUser)
-                    .addComponent(jLabel20)
-                    .addComponent(chkPass))
-                .addContainerGap(49, Short.MAX_VALUE))
+                    .addGroup(jPanel11Layout.createSequentialGroup()
+                        .addComponent(jLabel21)
+                        .addGap(5, 5, 5)
+                        .addComponent(txtEmployeeNum, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(6, 6, 6)
+                        .addComponent(jLabel22)
+                        .addGap(5, 5, 5)
+                        .addComponent(txtFirstName, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(5, 5, 5)
+                        .addComponent(jLabel23)
+                        .addGap(5, 5, 5)
+                        .addComponent(txtLastName, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel11)
+                        .addGap(6, 6, 6)
+                        .addComponent(txtUserName, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(5, 5, 5)
+                        .addComponent(jLabel12)
+                        .addGap(5, 5, 5)
+                        .addComponent(txtPass, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(5, 5, 5)
+                        .addComponent(jLabel16)
+                        .addGap(5, 5, 5)
+                        .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(4, 4, 4)
+                        .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(chkPass)
+                            .addComponent(jLabel20))
+                        .addGap(31, 31, 31)
+                        .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                .addComponent(btnSaveUser2)
+                                .addComponent(btnClear))
+                            .addComponent(btnSaveUser))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(btnSaveUser1)
+                            .addComponent(btnSave)
+                            .addComponent(btnViewUser)))
+                    .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 457, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(32, Short.MAX_VALUE))
         );
+
+        jLabel24.setFont(new java.awt.Font("Rockwell", 1, 48)); // NOI18N
+        jLabel24.setForeground(new java.awt.Color(247, 247, 217));
+        jLabel24.setText("       “Outsourcing Inspired by Quality”");
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
         jPanel10.setLayout(jPanel10Layout);
         jPanel10Layout.setHorizontalGroup(
             jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel10Layout.createSequentialGroup()
-                .addGap(269, 269, 269)
-                .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(311, Short.MAX_VALUE))
+                .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel10Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jLabel24))
+                    .addGroup(jPanel10Layout.createSequentialGroup()
+                        .addGap(25, 25, 25)
+                        .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel10Layout.setVerticalGroup(
             jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel10Layout.createSequentialGroup()
-                .addContainerGap(154, Short.MAX_VALUE)
+                .addGap(20, 20, 20)
+                .addComponent(jLabel24, javax.swing.GroupLayout.PREFERRED_SIZE, 98, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(140, 140, 140))
+                .addGap(22, 22, 22))
         );
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
         jPanel8Layout.setHorizontalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel8Layout.createSequentialGroup()
+                .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(0, 0, 0))
         );
         jPanel8Layout.setVerticalGroup(
             jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1547,12 +1938,30 @@ private String hashPassword(String password) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane2.setViewportView(tblStock);
+        if (tblStock.getColumnModel().getColumnCount() > 0) {
+            tblStock.getColumnModel().getColumn(0).setResizable(false);
+            tblStock.getColumnModel().getColumn(1).setResizable(false);
+            tblStock.getColumnModel().getColumn(2).setResizable(false);
+            tblStock.getColumnModel().getColumn(3).setResizable(false);
+            tblStock.getColumnModel().getColumn(4).setResizable(false);
+            tblStock.getColumnModel().getColumn(5).setResizable(false);
+            tblStock.getColumnModel().getColumn(6).setResizable(false);
+            tblStock.getColumnModel().getColumn(7).setResizable(false);
+            tblStock.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         btnSearch1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/magnifying-glass (1).png"))); // NOI18N
 
@@ -1720,13 +2129,28 @@ private String hashPassword(String password) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.String.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane4.setViewportView(tblReturn);
         if (tblReturn.getColumnModel().getColumnCount() > 0) {
+            tblReturn.getColumnModel().getColumn(0).setResizable(false);
+            tblReturn.getColumnModel().getColumn(1).setResizable(false);
+            tblReturn.getColumnModel().getColumn(2).setResizable(false);
+            tblReturn.getColumnModel().getColumn(3).setResizable(false);
+            tblReturn.getColumnModel().getColumn(4).setResizable(false);
+            tblReturn.getColumnModel().getColumn(5).setResizable(false);
+            tblReturn.getColumnModel().getColumn(6).setResizable(false);
+            tblReturn.getColumnModel().getColumn(7).setResizable(false);
             tblReturn.getColumnModel().getColumn(8).setResizable(false);
         }
 
@@ -1764,7 +2188,8 @@ private String hashPassword(String password) {
                 .addGap(1, 1, 1)
                 .addComponent(btnSearch2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(6, 6, 6))
-            .addGroup(jPanel16Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel16Layout.createSequentialGroup()
+                .addContainerGap()
                 .addComponent(jScrollPane4)
                 .addContainerGap())
         );
@@ -1779,8 +2204,8 @@ private String hashPassword(String password) {
                         .addComponent(btnTransferRtn, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 497, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         tabSuperadmin.addTab("tab3", jPanel16);
@@ -1799,12 +2224,30 @@ private String hashPassword(String password) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.String.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane5.setViewportView(tblRepair);
+        if (tblRepair.getColumnModel().getColumnCount() > 0) {
+            tblRepair.getColumnModel().getColumn(0).setResizable(false);
+            tblRepair.getColumnModel().getColumn(1).setResizable(false);
+            tblRepair.getColumnModel().getColumn(2).setResizable(false);
+            tblRepair.getColumnModel().getColumn(3).setResizable(false);
+            tblRepair.getColumnModel().getColumn(4).setResizable(false);
+            tblRepair.getColumnModel().getColumn(5).setResizable(false);
+            tblRepair.getColumnModel().getColumn(6).setResizable(false);
+            tblRepair.getColumnModel().getColumn(7).setResizable(false);
+            tblRepair.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         btnSearch4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/magnifying-glass (1).png"))); // NOI18N
 
@@ -1857,8 +2300,8 @@ private String hashPassword(String password) {
                         .addComponent(btnTransferRpr, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 494, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         tabSuperadmin.addTab("tab4", jPanel17);
@@ -1877,12 +2320,30 @@ private String hashPassword(String password) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.String.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane6.setViewportView(tblDisposal);
+        if (tblDisposal.getColumnModel().getColumnCount() > 0) {
+            tblDisposal.getColumnModel().getColumn(0).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(1).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(2).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(3).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(4).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(5).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(6).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(7).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         btnSearch5.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/magnifying-glass (1).png"))); // NOI18N
 
@@ -1908,9 +2369,12 @@ private String hashPassword(String password) {
         jPanel18.setLayout(jPanel18Layout);
         jPanel18Layout.setHorizontalGroup(
             jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel18Layout.createSequentialGroup()
-                .addGroup(jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel18Layout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel18Layout.createSequentialGroup()
+                .addGroup(jPanel18Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(jPanel18Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPane6))
+                    .addGroup(jPanel18Layout.createSequentialGroup()
                         .addGap(374, 630, Short.MAX_VALUE)
                         .addComponent(btnTransferDps)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -1918,8 +2382,7 @@ private String hashPassword(String password) {
                         .addGap(3, 3, 3)
                         .addComponent(txtSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(1, 1, 1)
-                        .addComponent(btnSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane6))
+                        .addComponent(btnSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         jPanel18Layout.setVerticalGroup(
@@ -1933,8 +2396,8 @@ private String hashPassword(String password) {
                         .addComponent(btnTransferDps, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.PREFERRED_SIZE, 490, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         tabSuperadmin.addTab("tab5", jPanel18);
@@ -2028,11 +2491,11 @@ private String hashPassword(String password) {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(48, 48, 48)
-                        .addComponent(jLabel19))
-                    .addGroup(jPanel4Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, 1010, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, 1010, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGap(58, 58, 58)
+                        .addComponent(jLabel19)))
                 .addGap(102, 102, 102)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createSequentialGroup()
@@ -2052,9 +2515,9 @@ private String hashPassword(String password) {
                         .addGap(39, 39, 39)
                         .addComponent(jTabbedPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel4Layout.createSequentialGroup()
-                        .addGap(41, 41, 41)
-                        .addComponent(jLabel19)
-                        .addGap(18, 18, 18)
+                        .addGap(16, 16, 16)
+                        .addComponent(jLabel19, javax.swing.GroupLayout.PREFERRED_SIZE, 83, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
                         .addComponent(jPanel9, javax.swing.GroupLayout.PREFERRED_SIZE, 605, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -2109,11 +2572,13 @@ private String hashPassword(String password) {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1368, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 749, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
@@ -2167,13 +2632,10 @@ private String hashPassword(String password) {
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1ActionPerformed
 
-    private void cbAccountTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbAccountTypeActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_cbAccountTypeActionPerformed
-
     private void btnAddUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddUserActionPerformed
         // TODO add your handling code here:
         tabPane.setSelectedIndex(2);
+        displayAccountsData();
     }//GEN-LAST:event_btnAddUserActionPerformed
 
     private void txtClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtClearActionPerformed
@@ -2281,24 +2743,63 @@ private String hashPassword(String password) {
         // TODO add your handling code here:
     }//GEN-LAST:event_cbSStatusActionPerformed
 
-    private void btnSaveUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveUserActionPerformed
+    private void btnViewUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnViewUserActionPerformed
         // TODO add your handling code here:
-        addUser();
-    }//GEN-LAST:event_btnSaveUserActionPerformed
+        displayAccountsData();
+    }//GEN-LAST:event_btnViewUserActionPerformed
 
-    private void txtUserNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUserNameActionPerformed
+    private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_txtUserNameActionPerformed
+        saveUserChanges();
+    }//GEN-LAST:event_btnSaveActionPerformed
+
+    private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed
+        // TODO add your handling code here:
+        txtEmployeeNum.setText("");
+        txtFirstName.setText("");
+        txtLastName.setText("");
+        txtUserName.setText("");
+        txtPass.setText("");
+        cbAccountType.setSelectedIndex(0);
+        chkPass.setSelected(false);
+    }//GEN-LAST:event_btnClearActionPerformed
+
+    private void btnSaveUser2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveUser2ActionPerformed
+        // TODO add your handling code here:
+        deleteUser();
+    }//GEN-LAST:event_btnSaveUser2ActionPerformed
+
+    private void btnSaveUser1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveUser1ActionPerformed
+        // TODO add your handling code here:
+        editUserTable();
+    }//GEN-LAST:event_btnSaveUser1ActionPerformed
+
+    private void txtLastNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtLastNameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtLastNameActionPerformed
 
     private void chkPassActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkPassActionPerformed
         // TODO add your handling code here:
-         if(chkPass.isSelected()){
+        if(chkPass.isSelected()){
             txtPass.setEchoChar((char)0);
         }
         else{
             txtPass.setEchoChar('*');
         }
     }//GEN-LAST:event_chkPassActionPerformed
+
+    private void txtUserNameActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtUserNameActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtUserNameActionPerformed
+
+    private void btnSaveUserActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveUserActionPerformed
+        // TODO add your handling code here:
+        addUser();
+    }//GEN-LAST:event_btnSaveUserActionPerformed
+
+    private void cbAccountTypeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbAccountTypeActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_cbAccountTypeActionPerformed
 
     /**
      * @param args the command line arguments
@@ -2339,6 +2840,8 @@ private String hashPassword(String password) {
     private javax.swing.JButton btnAdd;
     private javax.swing.JButton btnAddUser;
     private javax.swing.JButton btnChecking;
+    private javax.swing.JButton btnClear;
+    private javax.swing.JButton btnClear1;
     private javax.swing.JButton btnDashboard;
     private javax.swing.JButton btnDelete2;
     private javax.swing.JButton btnDelete3;
@@ -2350,7 +2853,14 @@ private String hashPassword(String password) {
     private javax.swing.JButton btnRecords;
     private javax.swing.JButton btnRepair;
     private javax.swing.JButton btnReturn;
+    private javax.swing.JButton btnSave;
+    private javax.swing.JButton btnSave1;
     private javax.swing.JButton btnSaveUser;
+    private javax.swing.JButton btnSaveUser1;
+    private javax.swing.JButton btnSaveUser2;
+    private javax.swing.JButton btnSaveUser3;
+    private javax.swing.JButton btnSaveUser4;
+    private javax.swing.JButton btnSaveUser5;
     private javax.swing.JButton btnSearch1;
     private javax.swing.JButton btnSearch2;
     private javax.swing.JButton btnSearch3;
@@ -2363,10 +2873,14 @@ private String hashPassword(String password) {
     private javax.swing.JButton btnTransferRtn;
     private javax.swing.JButton btnTransferStock;
     private javax.swing.JButton btnView;
+    private javax.swing.JButton btnViewUser;
+    private javax.swing.JButton btnViewUser1;
     private javax.swing.JComboBox<String> cbAccountType;
+    private javax.swing.JComboBox<String> cbAccountType1;
     private javax.swing.JComboBox<String> cbSCategory;
     private javax.swing.JComboBox<String> cbSStatus;
     private javax.swing.JCheckBox chkPass;
+    private javax.swing.JCheckBox chkPass1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -2380,7 +2894,19 @@ private String hashPassword(String password) {
     private javax.swing.JLabel jLabel19;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
+    private javax.swing.JLabel jLabel21;
+    private javax.swing.JLabel jLabel22;
+    private javax.swing.JLabel jLabel23;
+    private javax.swing.JLabel jLabel24;
+    private javax.swing.JLabel jLabel25;
+    private javax.swing.JLabel jLabel26;
+    private javax.swing.JLabel jLabel27;
+    private javax.swing.JLabel jLabel28;
+    private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel30;
+    private javax.swing.JLabel jLabel31;
+    private javax.swing.JLabel jLabel32;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
@@ -2390,6 +2916,7 @@ private String hashPassword(String password) {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
+    private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel13;
     private javax.swing.JPanel jPanel15;
     private javax.swing.JPanel jPanel16;
@@ -2409,10 +2936,14 @@ private String hashPassword(String password) {
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
+    private javax.swing.JScrollPane jScrollPane7;
+    private javax.swing.JScrollPane jScrollPane8;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTabbedPane tabPane;
     private javax.swing.JTabbedPane tabSuperadmin;
+    private javax.swing.JTable tblAccounts;
+    private javax.swing.JTable tblAccounts1;
     private javax.swing.JTable tblChecking;
     private javax.swing.JTable tblDataInfo;
     private javax.swing.JTable tblDisposal;
@@ -2422,11 +2953,18 @@ private String hashPassword(String password) {
     private javax.swing.JTextField txtBrand;
     private javax.swing.JButton txtClear;
     private javax.swing.JButton txtEdit;
+    private javax.swing.JTextField txtEmployeeNum;
+    private javax.swing.JTextField txtEmployeeNum1;
+    private javax.swing.JTextField txtFirstName;
+    private javax.swing.JTextField txtFirstName1;
     private javax.swing.JButton txtInsert;
     private javax.swing.JButton txtInsert1;
     private javax.swing.JTextField txtItemName;
+    private javax.swing.JTextField txtLastName;
+    private javax.swing.JTextField txtLastName1;
     private javax.swing.JTextField txtModel;
     private javax.swing.JPasswordField txtPass;
+    private javax.swing.JPasswordField txtPass1;
     private javax.swing.JTextField txtQty;
     private javax.swing.JTextField txtSearch2;
     private javax.swing.JTextField txtSearch3;
@@ -2436,5 +2974,6 @@ private String hashPassword(String password) {
     private javax.swing.JTextField txtSerial;
     private javax.swing.JTextField txtSpecification;
     private javax.swing.JTextField txtUserName;
+    private javax.swing.JTextField txtUserName1;
     // End of variables declaration//GEN-END:variables
 }
