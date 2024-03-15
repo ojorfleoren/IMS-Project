@@ -53,6 +53,52 @@ public superadmin() {
         tblChecking.getColumnModel().getColumn(8).setPreferredWidth(30);
         
     }
+public void searchStockItems() {
+        String searchText = txtSearchStock.getText().trim();
+
+        DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
+        model.setRowCount(0); // Clear existing rows
+
+        try {
+            String sql = "SELECT * FROM Stock WHERE ItemName LIKE ? OR Category LIKE ? OR Status LIKE ? OR Brand LIKE ?";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+            pst.setString(3, "%" + searchText + "%");
+            pst.setString(4, "%" + searchText + "%");
+            rst = pst.executeQuery();
+
+            while (rst.next()) {
+                int ItemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String modelValue = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                String status = rst.getString("Status");
+                int quantity = rst.getInt("Qty");
+
+                // Map database column names to JTable column names
+                model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            System.err.println("Error searching items in the database.");
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
 //ADD item functionality
 public void insertItem() {
         try {
@@ -476,8 +522,6 @@ private String getStatus(int itemID) {
     }
     return null;
 }
-
-
 private void transferItems(int itemID, int currentQty, int transferQty, String sourceTable, String sourceArea, String destinationTable, String destinationArea, java.sql.Date transferDate) {
     try {
         // Update quantity in the source table
@@ -670,7 +714,7 @@ public void displayRepairData() {
 
     try {
         // Modify the SQL query for Repair area
-        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, rep.Qty AS RepairedQty, rep.RepairDate " +
+        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Category, s.Brand, s.Status, rep.Qty AS RepairedQty, rep.Date " +
                      "FROM Repair rep " +
                      "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
 
@@ -686,7 +730,7 @@ public void displayRepairData() {
                 String brand = rst.getString("Brand");
                 String status = rst.getString("Status");
                 int repairedQty = rst.getInt("RepairedQty");
-                Date date = rst.getDate("RepairDate");
+                Date date = rst.getDate("Date");
 
                 // Add a row to the Repair table with all the information
                 repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, category, brand, status, repairedQty, date});
@@ -1293,7 +1337,7 @@ private void clearUserFields() {
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 571, Short.MAX_VALUE))
+                .addGap(0, 644, Short.MAX_VALUE))
         );
 
         tabPane.addTab("tab1", jPanel2);
@@ -1594,7 +1638,7 @@ private void clearUserFields() {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnView))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 485, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(15, Short.MAX_VALUE))
+                .addContainerGap(88, Short.MAX_VALUE))
         );
 
         tabPane.addTab("tab2", jPanel3);
@@ -1970,6 +2014,11 @@ private void clearUserFields() {
         });
 
         txtSearchStock.setFont(new java.awt.Font("Rockwell", 0, 14)); // NOI18N
+        txtSearchStock.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtSearchStockActionPerformed(evt);
+            }
+        });
 
         btnTransferStock.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
         btnTransferStock.setText("Transfer");
@@ -2200,7 +2249,7 @@ private void clearUserFields() {
                         .addComponent(btnTransferRtn, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch2, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 527, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -2296,7 +2345,7 @@ private void clearUserFields() {
                         .addComponent(btnTransferRpr, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch4, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addComponent(jScrollPane5, javax.swing.GroupLayout.DEFAULT_SIZE, 527, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -2392,7 +2441,7 @@ private void clearUserFields() {
                         .addComponent(btnTransferDps, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(btnSearch5, javax.swing.GroupLayout.PREFERRED_SIZE, 30, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 498, Short.MAX_VALUE)
+                .addComponent(jScrollPane6, javax.swing.GroupLayout.DEFAULT_SIZE, 527, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -2797,6 +2846,55 @@ private void clearUserFields() {
         // TODO add your handling code here:
     }//GEN-LAST:event_cbAccountTypeActionPerformed
 
+    private void txtSearchStockActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchStockActionPerformed
+        // TODO add your handling code here:
+        String searchText = txtSearchStock.getText().trim();
+
+        DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
+        model.setRowCount(0); // Clear existing rows
+
+        try {
+            String sql = "SELECT * FROM Stock WHERE ItemName LIKE ? OR Category LIKE ? OR Status LIKE ? OR Brand LIKE ?";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+            pst.setString(3, "%" + searchText + "%");
+            pst.setString(4, "%" + searchText + "%");
+            rst = pst.executeQuery();
+
+            while (rst.next()) {
+                int ItemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String modelValue = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                String status = rst.getString("Status");
+                int quantity = rst.getInt("Qty");
+
+                // Map database column names to JTable column names
+                model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            System.err.println("Error searching items in the database.");
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    
+    }//GEN-LAST:event_txtSearchStockActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -2837,7 +2935,6 @@ private void clearUserFields() {
     private javax.swing.JButton btnAddUser;
     private javax.swing.JButton btnChecking;
     private javax.swing.JButton btnClear;
-    private javax.swing.JButton btnClear1;
     private javax.swing.JButton btnDashboard;
     private javax.swing.JButton btnDelete2;
     private javax.swing.JButton btnDelete3;
@@ -2850,13 +2947,9 @@ private void clearUserFields() {
     private javax.swing.JButton btnRepair;
     private javax.swing.JButton btnReturn;
     private javax.swing.JButton btnSave;
-    private javax.swing.JButton btnSave1;
     private javax.swing.JButton btnSaveUser;
     private javax.swing.JButton btnSaveUser1;
     private javax.swing.JButton btnSaveUser2;
-    private javax.swing.JButton btnSaveUser3;
-    private javax.swing.JButton btnSaveUser4;
-    private javax.swing.JButton btnSaveUser5;
     private javax.swing.JButton btnSearch1;
     private javax.swing.JButton btnSearch2;
     private javax.swing.JButton btnSearch3;
@@ -2870,13 +2963,10 @@ private void clearUserFields() {
     private javax.swing.JButton btnTransferStock;
     private javax.swing.JButton btnView;
     private javax.swing.JButton btnViewUser;
-    private javax.swing.JButton btnViewUser1;
     private javax.swing.JComboBox<String> cbAccountType;
-    private javax.swing.JComboBox<String> cbAccountType1;
     private javax.swing.JComboBox<String> cbSCategory;
     private javax.swing.JComboBox<String> cbSStatus;
     private javax.swing.JCheckBox chkPass;
-    private javax.swing.JCheckBox chkPass1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
@@ -2894,15 +2984,7 @@ private void clearUserFields() {
     private javax.swing.JLabel jLabel22;
     private javax.swing.JLabel jLabel23;
     private javax.swing.JLabel jLabel24;
-    private javax.swing.JLabel jLabel25;
-    private javax.swing.JLabel jLabel26;
-    private javax.swing.JLabel jLabel27;
-    private javax.swing.JLabel jLabel28;
-    private javax.swing.JLabel jLabel29;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel30;
-    private javax.swing.JLabel jLabel31;
-    private javax.swing.JLabel jLabel32;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
@@ -2912,7 +2994,6 @@ private void clearUserFields() {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel11;
-    private javax.swing.JPanel jPanel12;
     private javax.swing.JPanel jPanel13;
     private javax.swing.JPanel jPanel15;
     private javax.swing.JPanel jPanel16;
@@ -2933,13 +3014,11 @@ private void clearUserFields() {
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JScrollPane jScrollPane7;
-    private javax.swing.JScrollPane jScrollPane8;
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTabbedPane tabPane;
     private javax.swing.JTabbedPane tabSuperadmin;
     private javax.swing.JTable tblAccounts;
-    private javax.swing.JTable tblAccounts1;
     private javax.swing.JTable tblChecking;
     private javax.swing.JTable tblDataInfo;
     private javax.swing.JTable tblDisposal;
@@ -2950,17 +3029,13 @@ private void clearUserFields() {
     private javax.swing.JButton txtClear;
     private javax.swing.JButton txtEdit;
     private javax.swing.JTextField txtEmployeeNum;
-    private javax.swing.JTextField txtEmployeeNum1;
     private javax.swing.JTextField txtFirstName;
-    private javax.swing.JTextField txtFirstName1;
     private javax.swing.JButton txtInsert;
     private javax.swing.JButton txtInsert1;
     private javax.swing.JTextField txtItemName;
     private javax.swing.JTextField txtLastName;
-    private javax.swing.JTextField txtLastName1;
     private javax.swing.JTextField txtModel;
     private javax.swing.JPasswordField txtPass;
-    private javax.swing.JPasswordField txtPass1;
     private javax.swing.JTextField txtQty;
     private javax.swing.JTextField txtSearch2;
     private javax.swing.JTextField txtSearch3;
@@ -2970,6 +3045,5 @@ private void clearUserFields() {
     private javax.swing.JTextField txtSerial;
     private javax.swing.JTextField txtSpecification;
     private javax.swing.JTextField txtUserName;
-    private javax.swing.JTextField txtUserName1;
     // End of variables declaration//GEN-END:variables
 }
