@@ -959,7 +959,6 @@ private String hashPassword(String password) {
         return null;
     }
 }
-// Define a method to populate the user data into the input fields for editing
 private void editUserTable() {
     int selectedRow = tblAccounts.getSelectedRow();
     if (selectedRow == -1) {
@@ -981,7 +980,6 @@ private void editUserTable() {
     if (option != JOptionPane.YES_OPTION) {
         return; // User selected No, so return without editing the user
     }
-
     // Populate data into input fields
     txtEmployeeNum.setText(String.valueOf(employeeNum));
     txtFirstName.setText(firstName);
@@ -994,20 +992,19 @@ private void editUserTable() {
     // Enable the "Save" button for confirming changes
     btnSave.setEnabled(true);
 }
-// Define a method for the "Save" button to confirm changes
-
-private void saveUserChanges() {
-    // Retrieve edited data from input fields
+private void save() {
     int selectedRow = tblAccounts.getSelectedRow();
     if (selectedRow == -1) {
         JOptionPane.showMessageDialog(this, "Please select a user to edit.", "Error", JOptionPane.ERROR_MESSAGE);
         return;
     }
+
+    int userId = (int) tblAccounts.getValueAt(selectedRow, 0);
     int employeeNum = Integer.parseInt(txtEmployeeNum.getText());
     String firstName = txtFirstName.getText();
     String lastName = txtLastName.getText();
     String username = txtUserName.getText();
-    String newPassword = new String(txtPass.getPassword()); // New password entered by user
+    String newPassword = new String(txtPass.getPassword());
     String accountType = (String) cbAccountType.getSelectedItem();
 
     // Validation
@@ -1016,10 +1013,9 @@ private void saveUserChanges() {
         return;
     }
 
-    // Confirmation dialog
     int option = JOptionPane.showConfirmDialog(this, "Are you sure you want to save changes?", "Confirmation", JOptionPane.YES_NO_OPTION);
     if (option != JOptionPane.YES_OPTION) {
-        return; // User selected No, so return without saving changes
+        return;
     }
 
     // Hash the new password
@@ -1033,14 +1029,14 @@ private void saveUserChanges() {
         pst.setString(2, firstName);
         pst.setString(3, lastName);
         pst.setString(4, username);
-        pst.setString(5, hashedPassword); // Store hashed password
+        pst.setString(5, hashedPassword);
         pst.setString(6, accountType);
+        pst.setInt(7, userId);
         pst.executeUpdate();
 
         JOptionPane.showMessageDialog(this, "Changes saved successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
         displayAccountsData(); // Refresh the Accounts table after saving changes
 
-        // Reset fields and disable Save button
         clearUserFields();
         btnSave.setEnabled(false);
 
@@ -1058,6 +1054,7 @@ private void saveUserChanges() {
         }
     }
 }
+// Define a method for the "Save" button to confirm changes
 //Delete User functionality
 private void deleteUser() {
     int selectedRow = tblAccounts.getSelectedRow();
@@ -1104,7 +1101,6 @@ private void deleteUser() {
         }
     }
 }
-
 //Clear the Add User Fields
 private void clearUserFields() {
     txtEmployeeNum.setText("");
@@ -2750,7 +2746,7 @@ private void clearUserFields() {
 
     private void btnSaveActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSaveActionPerformed
         // TODO add your handling code here:
-        saveUserChanges();
+        save();
     }//GEN-LAST:event_btnSaveActionPerformed
 
     private void btnClearActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnClearActionPerformed

@@ -1679,7 +1679,7 @@
                                           <Component id="btnSearch2" alignment="0" min="-2" pref="30" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jScrollPane4" pref="498" max="32767" attributes="0"/>
+                                      <Component id="jScrollPane4" pref="527" max="32767" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                   </Group>
                               </Group>
@@ -1848,7 +1848,7 @@
                                           <Component id="btnSearch4" alignment="0" min="-2" pref="30" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jScrollPane5" pref="498" max="32767" attributes="0"/>
+                                      <Component id="jScrollPane5" pref="527" max="32767" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                   </Group>
                               </Group>
@@ -2017,7 +2017,7 @@
                                           <Component id="btnSearch5" alignment="0" min="-2" pref="30" max="-2" attributes="0"/>
                                       </Group>
                                       <EmptySpace max="-2" attributes="0"/>
-                                      <Component id="jScrollPane6" pref="498" max="32767" attributes="0"/>
+                                      <Component id="jScrollPane6" pref="527" max="32767" attributes="0"/>
                                       <EmptySpace max="-2" attributes="0"/>
                                   </Group>
                               </Group>
