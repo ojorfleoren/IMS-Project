@@ -51,47 +51,57 @@ public class admin extends javax.swing.JFrame {
 //End
 //Add Item Functionality
 public void insertItem() {
+    try {
+        // Validate fields before proceeding
+        if (!validateFields()) {
+            return; // Stop execution if fields are not filled up
+        }
+
+        // Validate integer fields
+        int serialNum, qty;
         try {
-            // Validate fields before proceeding
-            if (!validateFields()) {
-                return; // Stop execution if fields are not filled up
+            serialNum = Integer.parseInt(txtSerial.getText());
+            qty = Integer.parseInt(txtQty.getText());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Please enter valid integer values for Serial Number and Quantity.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        String message = "Are you sure you want to add this item?";
+        int option = JOptionPane.showConfirmDialog(this, message, "Confirmation", JOptionPane.YES_NO_OPTION);
+
+        if (option == JOptionPane.YES_OPTION) {
+            String sql = "INSERT INTO Stock (SerialNo, ItemName, Model, Specification, Category, Brand, Status, Qty) " +
+                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            pst = conn.prepareStatement(sql);
+            pst.setInt(1, serialNum);
+            pst.setString(2, txtItemName.getText());
+            pst.setString(3, txtModel.getText());
+            pst.setString(4, txtSpecification.getText());
+            pst.setString(5, cbACategory.getSelectedItem().toString());
+            pst.setString(6, txtBrand.getText());
+            pst.setString(7, cbAStatus.getSelectedItem().toString());
+            pst.setInt(8, qty);
+
+            pst.execute();
+            JOptionPane.showMessageDialog(this, "Item added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            clear();
+            displayDataItems();
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error adding item to the database.");
+    } finally {
+        try {
+            if (pst != null) {
+                pst.close();
             }
-
-            String message = "Are you sure you want to add this item?";
-            int option = JOptionPane.showConfirmDialog(this, message, "Confirmation", JOptionPane.YES_NO_OPTION);
-
-            if (option == JOptionPane.YES_OPTION) {
-                String sql = "INSERT INTO Stock (SerialNo, ItemName, Model, Specification, Category, Brand, Status, Qty) " +
-                             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-                pst = conn.prepareStatement(sql);
-                pst.setInt(1, Integer.parseInt(txtSerial.getText()));
-                pst.setString(2, txtItemName.getText());
-                pst.setString(3, txtModel.getText());
-                pst.setString(4, txtSpecification.getText());
-                pst.setString(5, cbACategory.getSelectedItem().toString());
-                pst.setString(6, txtBrand.getText());
-                pst.setString(7, cbAStatus.getSelectedItem().toString());
-                pst.setInt(8, Integer.parseInt(txtQty.getText()));
-
-                pst.execute();
-                JOptionPane.showMessageDialog(this, "Item added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                clear();
-                displayDataItems();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            System.err.println("Error adding item to the database.");
-        } finally {
-            try {
-                if (pst != null) {
-                    pst.close();
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
     }
+}
 //End
 //Display data to the add form table
 public void displayDataItems() {
