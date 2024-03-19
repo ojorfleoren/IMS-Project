@@ -133,7 +133,7 @@ public void insertItem() {
             pst.setString(4, txtSpecification.getText());
             pst.setString(5, cbSCategory.getSelectedItem().toString());
             pst.setString(6, txtBrand.getText());
-            pst.setInt(8, qty);
+            pst.setInt(7, qty);
 
             pst.execute();
             JOptionPane.showMessageDialog(this, "Item added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -1537,7 +1537,6 @@ private void editUserTable() {
     }
 
     // Retrieve data from the selected row
-    int id = (int) tblAccounts.getValueAt(selectedRow, 0);
     int employeeNum = (int) tblAccounts.getValueAt(selectedRow, 1);
     String firstName = (String) tblAccounts.getValueAt(selectedRow, 2);
     String lastName = (String) tblAccounts.getValueAt(selectedRow, 3);
