@@ -1,9 +1,11 @@
 package inventory.management;
 
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 /*
@@ -19,19 +21,14 @@ public class User extends javax.swing.JFrame {
     Connection conn = null;
     PreparedStatement pst = null;
     ResultSet rst = null;
-    /**
-     * Creates new form User
-     */
+
     public User() {
         initComponents();
         conn = DBConnection.connectDB();
         setExtendedState(User.MAXIMIZED_BOTH);
     }
-    //Functionalities Method
-
-    
-    //Display Stock Data
-    public void displayStockItems() {
+//Functionalities Method
+public void displayStockItems() {
     DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
     model.setRowCount(0); // Clear existing rows
 
@@ -48,11 +45,10 @@ public class User extends javax.swing.JFrame {
             String specification = rst.getString("Specification");
             String category = rst.getString("Category");
             String brand = rst.getString("Brand");
-            String status = rst.getString("Status");
             int quantity = rst.getInt("Qty");
 
             // Map database column names to JTable column names
-            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
         }
 
     } catch (SQLException e) {
@@ -71,6 +67,146 @@ public class User extends javax.swing.JFrame {
         }
     }
 }
+//Display Four areas
+public void displayCheckingData() {
+    DefaultTableModel checkingModel = (DefaultTableModel) tblChecking.getModel();
+    checkingModel.setRowCount(0); // Clear existing rows
+    try {
+        String sql = "SELECT c.CheckingID, c.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, c.Qty AS TransferredQty, c.Date " +
+                     "FROM Checking c " +
+                     "LEFT JOIN Stock s ON c.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int checkingID = rst.getInt("CheckingID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int transferredQty = rst.getInt("TransferredQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Checking table with all the information
+                checkingModel.addRow(new Object[]{checkingID, itemID, serialNo, itemName, model, specification, category, brand, transferredQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Checking data from the database.");
+    }
+}
+//Display Return
+public void displayReturn() {
+    DefaultTableModel returnModel = (DefaultTableModel) tblReturn.getModel();
+    returnModel.setRowCount(0); // Clear existing rows
+
+    try {
+        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification,  s.Category, s.Brand, r.Qty AS ReturnedQty, r.Date " +
+                     "FROM Return r " +
+                     "LEFT JOIN Stock s ON r.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int returnID = rst.getInt("ReturnID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int returnedQty = rst.getInt("ReturnedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Return table with all the information
+                returnModel.addRow(new Object[]{returnID, itemID, serialNo, itemName, model, specification, category, brand, returnedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Return data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
+//Display Repair
+public void displayRepair() {
+    DefaultTableModel repairModel = (DefaultTableModel) tblRepair.getModel();
+    repairModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Repair area
+        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, rep.Qty AS RepairedQty, rep.Date " +
+                     "FROM Repair rep " +
+                     "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int repairID = rst.getInt("RepairID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int repairedQty = rst.getInt("RepairedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Repair table with all the information
+                repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, model, specification, category, brand, repairedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Repair data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
+//Display Disposal
+public void displayDisposal() {
+    DefaultTableModel disposalModel = (DefaultTableModel) tblDisposal.getModel();
+    disposalModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Disposal area
+        String sql = "SELECT d.DisposalID, d.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, d.Qty AS DisposedQty, d.Date " +
+                     "FROM Disposal d " +
+                     "LEFT JOIN Stock s ON d.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int disposalID = rst.getInt("DisposalID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int disposedQty = rst.getInt("DisposedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Disposal table with all the information
+                disposalModel.addRow(new Object[]{disposalID, itemID, serialNo, itemName, model, specification, category, brand, disposedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Disposal data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -92,23 +228,23 @@ public class User extends javax.swing.JFrame {
         tblStock = new javax.swing.JTable();
         jPanel7 = new javax.swing.JPanel();
         jScrollPane2 = new javax.swing.JScrollPane();
-        jTable2 = new javax.swing.JTable();
+        tblChecking = new javax.swing.JTable();
         jPanel8 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
-        jTable3 = new javax.swing.JTable();
+        tblReturn = new javax.swing.JTable();
         jPanel9 = new javax.swing.JPanel();
         jScrollPane4 = new javax.swing.JScrollPane();
-        jTable4 = new javax.swing.JTable();
+        tblRepair = new javax.swing.JTable();
         jPanel10 = new javax.swing.JPanel();
         jScrollPane5 = new javax.swing.JScrollPane();
-        jTable5 = new javax.swing.JTable();
-        jTextField1 = new javax.swing.JTextField();
-        jButton7 = new javax.swing.JButton();
+        tblDisposal = new javax.swing.JTable();
+        txtSearchItem = new javax.swing.JTextField();
         btnStock = new javax.swing.JButton();
         jButton9 = new javax.swing.JButton();
         jButton10 = new javax.swing.JButton();
         jButton11 = new javax.swing.JButton();
         jButton12 = new javax.swing.JButton();
+        jLabel25 = new javax.swing.JLabel();
         jButton3 = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -118,23 +254,24 @@ public class User extends javax.swing.JFrame {
 
         jButton1.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         jButton1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/menu icon.png"))); // NOI18N
-        jButton1.setText("Dashboard");
+        jButton1.setText(" Dashboard");
         jButton1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton1ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 250, -1, -1));
+        jPanel1.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 210, 210, 60));
 
         jButton2.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         jButton2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/records icon.png"))); // NOI18N
-        jButton2.setText("Records");
+        jButton2.setText(" Records");
+        jButton2.setHorizontalAlignment(javax.swing.SwingConstants.LEFT);
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 380, 200, -1));
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 280, 210, 60));
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/logo_1.png"))); // NOI18N
         jPanel1.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, -1, -1));
@@ -192,7 +329,7 @@ public class User extends javax.swing.JFrame {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addGap(21, 21, 21)
                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 866, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addContainerGap(143, Short.MAX_VALUE))
         );
         jPanel5Layout.setVerticalGroup(
             jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -206,24 +343,41 @@ public class User extends javax.swing.JFrame {
 
         tblStock.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "SerialNo", "Name ", "Model", "Specification", "Category", "Brand", "Status", "Qty"
+                "ID", "SerialNo", "Name ", "Model", "Specification", "Category", "Brand", "Qty"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane1.setViewportView(tblStock);
+        if (tblStock.getColumnModel().getColumnCount() > 0) {
+            tblStock.getColumnModel().getColumn(0).setResizable(false);
+            tblStock.getColumnModel().getColumn(1).setResizable(false);
+            tblStock.getColumnModel().getColumn(2).setResizable(false);
+            tblStock.getColumnModel().getColumn(3).setResizable(false);
+            tblStock.getColumnModel().getColumn(4).setResizable(false);
+            tblStock.getColumnModel().getColumn(5).setResizable(false);
+            tblStock.getColumnModel().getColumn(6).setResizable(false);
+            tblStock.getColumnModel().getColumn(7).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -244,26 +398,45 @@ public class User extends javax.swing.JFrame {
 
         tabstocksUser.addTab("tab1", jPanel6);
 
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+        tblChecking.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Item ", "Model", "Specification", "Category", "Brand", "Status", "Qty."
+                "CheckingID", "ItemID", "Serial", "ItemName", "Model", "Specifiation", "Category", "Brand", "Qty.", "CheckingDate"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
-        jScrollPane2.setViewportView(jTable2);
+        jScrollPane2.setViewportView(tblChecking);
+        if (tblChecking.getColumnModel().getColumnCount() > 0) {
+            tblChecking.getColumnModel().getColumn(0).setResizable(false);
+            tblChecking.getColumnModel().getColumn(1).setResizable(false);
+            tblChecking.getColumnModel().getColumn(2).setResizable(false);
+            tblChecking.getColumnModel().getColumn(3).setResizable(false);
+            tblChecking.getColumnModel().getColumn(4).setResizable(false);
+            tblChecking.getColumnModel().getColumn(5).setResizable(false);
+            tblChecking.getColumnModel().getColumn(6).setResizable(false);
+            tblChecking.getColumnModel().getColumn(7).setResizable(false);
+            tblChecking.getColumnModel().getColumn(8).setResizable(false);
+            tblChecking.getColumnModel().getColumn(9).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel7Layout = new javax.swing.GroupLayout(jPanel7);
         jPanel7.setLayout(jPanel7Layout);
@@ -284,26 +457,45 @@ public class User extends javax.swing.JFrame {
 
         tabstocksUser.addTab("tab2", jPanel7);
 
-        jTable3.setModel(new javax.swing.table.DefaultTableModel(
+        tblReturn.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Item ", "Model", "Specifiation", "Category", "Brand", "Status", "Qty."
+                "ReturnID", "ItemID", "Serial", "ItemName", "Model", "Specification", "Category", "Brand", "Qty.", "ReturnDate"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
-        jScrollPane3.setViewportView(jTable3);
+        jScrollPane3.setViewportView(tblReturn);
+        if (tblReturn.getColumnModel().getColumnCount() > 0) {
+            tblReturn.getColumnModel().getColumn(0).setResizable(false);
+            tblReturn.getColumnModel().getColumn(1).setResizable(false);
+            tblReturn.getColumnModel().getColumn(2).setResizable(false);
+            tblReturn.getColumnModel().getColumn(3).setResizable(false);
+            tblReturn.getColumnModel().getColumn(4).setResizable(false);
+            tblReturn.getColumnModel().getColumn(5).setResizable(false);
+            tblReturn.getColumnModel().getColumn(6).setResizable(false);
+            tblReturn.getColumnModel().getColumn(7).setResizable(false);
+            tblReturn.getColumnModel().getColumn(8).setResizable(false);
+            tblReturn.getColumnModel().getColumn(9).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
         jPanel8.setLayout(jPanel8Layout);
@@ -324,26 +516,45 @@ public class User extends javax.swing.JFrame {
 
         tabstocksUser.addTab("tab3", jPanel8);
 
-        jTable4.setModel(new javax.swing.table.DefaultTableModel(
+        tblRepair.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Item ", "Model", "Specification", "Category", "Brand", "Status", "Qty."
+                "RepairID", "ItemID", "Serial", "ItemName", "Model", "Specification", "Category", "Brand", "Qty.", "RepairDate"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
-        jScrollPane4.setViewportView(jTable4);
+        jScrollPane4.setViewportView(tblRepair);
+        if (tblRepair.getColumnModel().getColumnCount() > 0) {
+            tblRepair.getColumnModel().getColumn(0).setResizable(false);
+            tblRepair.getColumnModel().getColumn(1).setResizable(false);
+            tblRepair.getColumnModel().getColumn(2).setResizable(false);
+            tblRepair.getColumnModel().getColumn(3).setResizable(false);
+            tblRepair.getColumnModel().getColumn(4).setResizable(false);
+            tblRepair.getColumnModel().getColumn(5).setResizable(false);
+            tblRepair.getColumnModel().getColumn(6).setResizable(false);
+            tblRepair.getColumnModel().getColumn(7).setResizable(false);
+            tblRepair.getColumnModel().getColumn(8).setResizable(false);
+            tblRepair.getColumnModel().getColumn(9).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
         jPanel9.setLayout(jPanel9Layout);
@@ -364,26 +575,45 @@ public class User extends javax.swing.JFrame {
 
         tabstocksUser.addTab("tab4", jPanel9);
 
-        jTable5.setModel(new javax.swing.table.DefaultTableModel(
+        tblDisposal.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Item ", "Model", "Specification", "Category", "Brand", "Status", "Qty."
+                "DisposalID", "ItemID  ", "Serial", "ItemName", "Model", "Specification", "Category", "Brand", "Qty.", "DisposalDate"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
-        jScrollPane5.setViewportView(jTable5);
+        jScrollPane5.setViewportView(tblDisposal);
+        if (tblDisposal.getColumnModel().getColumnCount() > 0) {
+            tblDisposal.getColumnModel().getColumn(0).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(1).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(2).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(3).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(4).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(5).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(6).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(7).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(8).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(9).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
         jPanel10.setLayout(jPanel10Layout);
@@ -404,17 +634,10 @@ public class User extends javax.swing.JFrame {
 
         tabstocksUser.addTab("tab5", jPanel10);
 
-        jTextField1.setFont(new java.awt.Font("Rockwell", 0, 14)); // NOI18N
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+        txtSearchItem.setFont(new java.awt.Font("Rockwell", 0, 14)); // NOI18N
+        txtSearchItem.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
-            }
-        });
-
-        jButton7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/magnifying-glass (1).png"))); // NOI18N
-        jButton7.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton7ActionPerformed(evt);
+                txtSearchItemActionPerformed(evt);
             }
         });
 
@@ -435,7 +658,7 @@ public class User extends javax.swing.JFrame {
         });
 
         jButton10.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        jButton10.setText("Repair");
+        jButton10.setText("Return");
         jButton10.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton10ActionPerformed(evt);
@@ -443,7 +666,7 @@ public class User extends javax.swing.JFrame {
         });
 
         jButton11.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        jButton11.setText("Return");
+        jButton11.setText("Repair");
         jButton11.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton11ActionPerformed(evt);
@@ -457,6 +680,9 @@ public class User extends javax.swing.JFrame {
                 jButton12ActionPerformed(evt);
             }
         });
+
+        jLabel25.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel25.setText("Search:");
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -479,10 +705,10 @@ public class User extends javax.swing.JFrame {
                         .addGap(2, 2, 2)
                         .addComponent(jButton12)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jLabel25)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton7)
-                        .addGap(15, 15, 15))))
+                        .addComponent(txtSearchItem, javax.swing.GroupLayout.PREFERRED_SIZE, 158, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(14, 14, 14))))
             .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
@@ -490,16 +716,15 @@ public class User extends javax.swing.JFrame {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
-                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(btnStock)
-                        .addComponent(jButton9)
-                        .addComponent(jButton10)
-                        .addComponent(jButton11)
-                        .addComponent(jButton12)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnStock)
+                    .addComponent(jButton9)
+                    .addComponent(jButton10)
+                    .addComponent(jButton11)
+                    .addComponent(jButton12)
+                    .addComponent(txtSearchItem, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel25))
+                .addGap(2, 2, 2)
                 .addComponent(tabstocksUser, javax.swing.GroupLayout.PREFERRED_SIZE, 574, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(56, 56, 56))
         );
@@ -515,19 +740,17 @@ public class User extends javax.swing.JFrame {
                 jButton3ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 530, -1, -1));
+        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(36, 616, 180, 50));
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 1376, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 751, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 751, Short.MAX_VALUE)
         );
 
         pack();
@@ -538,9 +761,51 @@ public class User extends javax.swing.JFrame {
         tabUser.setSelectedIndex(0);
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+    private void txtSearchItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchItemActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
+        String searchText = txtSearchItem.getText().trim();
+
+        DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
+        model.setRowCount(0); // Clear existing rows
+
+        try {
+            String sql = "SELECT * FROM Stock WHERE ItemName LIKE ? OR Category LIKE ? OR Brand LIKE ?";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+            pst.setString(3, "%" + searchText + "%");
+            rst = pst.executeQuery();
+
+            while (rst.next()) {
+                int ItemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String modelValue = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int quantity = rst.getInt("Qty");
+
+                // Map database column names to JTable column names
+                model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            System.err.println("Error searching items in the database.");
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_txtSearchItemActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         // TODO add your handling code here:
@@ -554,10 +819,6 @@ public class User extends javax.swing.JFrame {
 
         }
     }//GEN-LAST:event_jButton3ActionPerformed
-
-    private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton7ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
@@ -574,21 +835,25 @@ public class User extends javax.swing.JFrame {
     private void jButton9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton9ActionPerformed
         // TODO add your handling code here:
         tabstocksUser.setSelectedIndex(1);
+        displayCheckingData();
     }//GEN-LAST:event_jButton9ActionPerformed
 
     private void jButton10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton10ActionPerformed
         // TODO add your handling code here:
         tabstocksUser.setSelectedIndex(2);
+        displayReturn();
     }//GEN-LAST:event_jButton10ActionPerformed
 
     private void jButton11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton11ActionPerformed
         // TODO add your handling code here:
         tabstocksUser.setSelectedIndex(3);
+        displayRepair();
     }//GEN-LAST:event_jButton11ActionPerformed
 
     private void jButton12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton12ActionPerformed
         // TODO add your handling code here:
         tabstocksUser.setSelectedIndex(4);
+        displayDisposal();
     }//GEN-LAST:event_jButton12ActionPerformed
 
     /**
@@ -634,10 +899,10 @@ public class User extends javax.swing.JFrame {
     private javax.swing.JButton jButton12;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton7;
     private javax.swing.JButton jButton9;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel25;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
@@ -654,13 +919,13 @@ public class User extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
-    private javax.swing.JTable jTable2;
-    private javax.swing.JTable jTable3;
-    private javax.swing.JTable jTable4;
-    private javax.swing.JTable jTable5;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTabbedPane tabUser;
     private javax.swing.JTabbedPane tabstocksUser;
+    private javax.swing.JTable tblChecking;
+    private javax.swing.JTable tblDisposal;
+    private javax.swing.JTable tblRepair;
+    private javax.swing.JTable tblReturn;
     private javax.swing.JTable tblStock;
+    private javax.swing.JTextField txtSearchItem;
     // End of variables declaration//GEN-END:variables
 }

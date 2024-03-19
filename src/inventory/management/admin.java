@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
@@ -26,7 +27,7 @@ public class admin extends javax.swing.JFrame {
         setExtendedState(admin.MAXIMIZED_BOTH);
     }
 //Validation of input fields
-    private boolean validateFields() {
+private boolean validateFields() {
         if (txtSerial.getText().isEmpty() || txtItemName.getText().isEmpty() ||
             txtModel.getText().isEmpty() || txtSpecification.getText().isEmpty() ||
             txtBrand.getText().isEmpty() || txtQty.getText().isEmpty()) {
@@ -38,17 +39,16 @@ public class admin extends javax.swing.JFrame {
         return true; // Validation passed
     }
 //Clear Fields Functionality
-    public void clear(){
+public void clear(){
         txtSerial.setText("");
         txtItemName.setText("");
         txtModel.setText("");
         txtSpecification.setText("");
         cbACategory.setSelectedIndex(0);
         txtBrand.setText("");
-        cbAStatus.setSelectedIndex(0);
         txtQty.setText("");
     }
-//End
+//End----------------------------------------------------------------------End
 //Add Item Functionality
 public void insertItem() {
     try {
@@ -63,7 +63,7 @@ public void insertItem() {
             serialNum = Integer.parseInt(txtSerial.getText());
             qty = Integer.parseInt(txtQty.getText());
         } catch (NumberFormatException ex) {
-            JOptionPane.showMessageDialog(this, "Please enter valid integer values for Serial Number and Quantity.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Serial and Quantity accepts numbers from 0-9", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
@@ -71,7 +71,7 @@ public void insertItem() {
         int option = JOptionPane.showConfirmDialog(this, message, "Confirmation", JOptionPane.YES_NO_OPTION);
 
         if (option == JOptionPane.YES_OPTION) {
-            String sql = "INSERT INTO Stock (SerialNo, ItemName, Model, Specification, Category, Brand, Status, Qty) " +
+            String sql = "INSERT INTO Stock (SerialNo, ItemName, Model, Specification, Category, Brand, Qty) " +
                          "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
             pst = conn.prepareStatement(sql);
@@ -81,8 +81,7 @@ public void insertItem() {
             pst.setString(4, txtSpecification.getText());
             pst.setString(5, cbACategory.getSelectedItem().toString());
             pst.setString(6, txtBrand.getText());
-            pst.setString(7, cbAStatus.getSelectedItem().toString());
-            pst.setInt(8, qty);
+            pst.setInt(7, qty);
 
             pst.execute();
             JOptionPane.showMessageDialog(this, "Item added successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -102,7 +101,7 @@ public void insertItem() {
         }
     }
 }
-//End
+//End----------------------------------------------------------------------End
 //Display data to the add form table
 public void displayDataItems() {
     DefaultTableModel model = (DefaultTableModel) tblDataInfo.getModel();
@@ -121,11 +120,10 @@ public void displayDataItems() {
             String specification = rst.getString("Specification");
             String category = rst.getString("Category");
             String brand = rst.getString("Brand");
-            String status = rst.getString("Status");
             int quantity = rst.getInt("Qty");
 
             // Map database column names to JTable column names
-            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
         }
 
     } catch (SQLException e) {
@@ -144,8 +142,8 @@ public void displayDataItems() {
         }
     }
 }
-//End
-     //Display Stock Records
+//End----------------------------------------------------------------------End
+//Display Stock Records
 public void displayStockItems() {
     DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
     model.setRowCount(0); // Clear existing rows
@@ -163,11 +161,10 @@ public void displayStockItems() {
             String specification = rst.getString("Specification");
             String category = rst.getString("Category");
             String brand = rst.getString("Brand");
-            String status = rst.getString("Status");
             int quantity = rst.getInt("Qty");
 
             // Map database column names to JTable column names
-            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, status, quantity});
+            model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
         }
 
     } catch (SQLException e) {
@@ -186,6 +183,146 @@ public void displayStockItems() {
         }
     }
 }
+//Display Four areas
+public void displayCheckingData() {
+    DefaultTableModel checkingModel = (DefaultTableModel) tblChecking.getModel();
+    checkingModel.setRowCount(0); // Clear existing rows
+    try {
+        String sql = "SELECT c.CheckingID, c.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, c.Qty AS TransferredQty, c.Date " +
+                     "FROM Checking c " +
+                     "LEFT JOIN Stock s ON c.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int checkingID = rst.getInt("CheckingID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int transferredQty = rst.getInt("TransferredQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Checking table with all the information
+                checkingModel.addRow(new Object[]{checkingID, itemID, serialNo, itemName, model, specification, category, brand, transferredQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Checking data from the database.");
+    }
+}
+//Display Return
+public void displayReturn() {
+    DefaultTableModel returnModel = (DefaultTableModel) tblReturn.getModel();
+    returnModel.setRowCount(0); // Clear existing rows
+
+    try {
+        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification,  s.Category, s.Brand, r.Qty AS ReturnedQty, r.Date " +
+                     "FROM Return r " +
+                     "LEFT JOIN Stock s ON r.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int returnID = rst.getInt("ReturnID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int returnedQty = rst.getInt("ReturnedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Return table with all the information
+                returnModel.addRow(new Object[]{returnID, itemID, serialNo, itemName, model, specification, category, brand, returnedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Return data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
+//Display Repair
+public void displayRepair() {
+    DefaultTableModel repairModel = (DefaultTableModel) tblRepair.getModel();
+    repairModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Repair area
+        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, rep.Qty AS RepairedQty, rep.Date " +
+                     "FROM Repair rep " +
+                     "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int repairID = rst.getInt("RepairID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int repairedQty = rst.getInt("RepairedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Repair table with all the information
+                repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, model, specification, category, brand, repairedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Repair data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
+//Display Disposal
+public void displayDisposal() {
+    DefaultTableModel disposalModel = (DefaultTableModel) tblDisposal.getModel();
+    disposalModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Disposal area
+        String sql = "SELECT d.DisposalID, d.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, d.Qty AS DisposedQty, d.Date " +
+                     "FROM Disposal d " +
+                     "LEFT JOIN Stock s ON d.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int disposalID = rst.getInt("DisposalID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int disposedQty = rst.getInt("DisposedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Disposal table with all the information
+                disposalModel.addRow(new Object[]{disposalID, itemID, serialNo, itemName, model, specification, category, brand, disposedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Disposal data from the database.");
+    }
+}
+//End----------------------------------------------------------------------End
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -214,7 +351,6 @@ public void displayStockItems() {
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         jTextField1 = new javax.swing.JTextField();
         txtItemName = new javax.swing.JTextField();
@@ -227,11 +363,12 @@ public void displayStockItems() {
         cbACategory = new javax.swing.JComboBox<>();
         jLabel15 = new javax.swing.JLabel();
         txtSpecification = new javax.swing.JTextField();
-        cbAStatus = new javax.swing.JComboBox<>();
         jButton7 = new javax.swing.JButton();
         jButton14 = new javax.swing.JButton();
         jLabel10 = new javax.swing.JLabel();
         txtSerial = new javax.swing.JTextField();
+        txtSearchInfo = new javax.swing.JTextField();
+        jLabel11 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         jPanel8 = new javax.swing.JPanel();
         jLabel13 = new javax.swing.JLabel();
@@ -252,13 +389,13 @@ public void displayStockItems() {
         jScrollPane6 = new javax.swing.JScrollPane();
         tblDisposal = new javax.swing.JTable();
         jPanel15 = new javax.swing.JPanel();
-        jTextField4 = new javax.swing.JTextField();
-        jButton8 = new javax.swing.JButton();
         btnAStock = new javax.swing.JButton();
         btnAChecking = new javax.swing.JButton();
         btnARepair = new javax.swing.JButton();
         btnAReturn = new javax.swing.JButton();
         btnADisposal = new javax.swing.JButton();
+        txtSearchItem = new javax.swing.JTextField();
+        jLabel16 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -274,7 +411,7 @@ public void displayStockItems() {
                 jButton2ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 250, 230, 60));
+        jPanel1.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 190, 230, 60));
 
         jButton3.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         jButton3.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/plus icon.png"))); // NOI18N
@@ -285,7 +422,7 @@ public void displayStockItems() {
                 jButton3ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 330, 230, 60));
+        jPanel1.add(jButton3, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 260, 230, 60));
 
         jButton4.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
         jButton4.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/records icon.png"))); // NOI18N
@@ -296,7 +433,7 @@ public void displayStockItems() {
                 jButton4ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 410, 230, 60));
+        jPanel1.add(jButton4, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 330, 230, 60));
 
         jButton5.setBackground(new java.awt.Color(204, 204, 204));
         jButton5.setFont(new java.awt.Font("Rockwell", 1, 24)); // NOI18N
@@ -306,7 +443,7 @@ public void displayStockItems() {
                 jButton5ActionPerformed(evt);
             }
         });
-        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 610, -1, 40));
+        jPanel1.add(jButton5, new org.netbeans.lib.awtextra.AbsoluteConstraints(46, 610, 180, 50));
 
         jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/logo_1.png"))); // NOI18N
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 40, 210, -1));
@@ -392,22 +529,19 @@ public void displayStockItems() {
         jLabel14.setText("ID");
 
         jLabel4.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel4.setText("Name");
+        jLabel4.setText("Name:");
 
         jLabel5.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel5.setText("Model");
+        jLabel5.setText("Model:");
 
         jLabel6.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel6.setText("Category");
+        jLabel6.setText("Category:");
 
         jLabel7.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel7.setText("Brand");
-
-        jLabel8.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel8.setText("Status");
+        jLabel7.setText("Brand:");
 
         jLabel9.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel9.setText("Quantity");
+        jLabel9.setText("Quantity:");
 
         jTextField1.setEnabled(false);
 
@@ -419,20 +553,20 @@ public void displayStockItems() {
 
         tblDataInfo.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Serial No.", "ItemName", "Model", "Specification", "Category", "Brand", "Status", "Qty"
+                "ID", "Serial No.", "ItemName", "Model", "Specification", "Category", "Brand", "Qty"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -453,7 +587,6 @@ public void displayStockItems() {
             tblDataInfo.getColumnModel().getColumn(5).setResizable(false);
             tblDataInfo.getColumnModel().getColumn(6).setResizable(false);
             tblDataInfo.getColumnModel().getColumn(7).setResizable(false);
-            tblDataInfo.getColumnModel().getColumn(8).setResizable(false);
         }
 
         jLabel12.setFont(new java.awt.Font("Rockwell", 1, 36)); // NOI18N
@@ -462,9 +595,7 @@ public void displayStockItems() {
         cbACategory.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hardware", "Software" }));
 
         jLabel15.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel15.setText("Specification");
-
-        cbAStatus.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Stock", "Checking", "Return", "Repair", "Disposal" }));
+        jLabel15.setText("Specification:");
 
         jButton7.setBackground(new java.awt.Color(0, 153, 153));
         jButton7.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
@@ -485,7 +616,16 @@ public void displayStockItems() {
         });
 
         jLabel10.setFont(new java.awt.Font("Rockwell", 1, 18)); // NOI18N
-        jLabel10.setText("Serial No.");
+        jLabel10.setText("Serial No:");
+
+        txtSearchInfo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtSearchInfoActionPerformed(evt);
+            }
+        });
+
+        jLabel11.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel11.setText("Search:");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -495,40 +635,43 @@ public void displayStockItems() {
                 .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGap(29, 29, 29)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel4)
                             .addComponent(jLabel5)
                             .addComponent(jLabel7)
-                            .addComponent(jLabel8)
                             .addComponent(jLabel9)
                             .addComponent(jLabel15)
                             .addComponent(jLabel14)
                             .addComponent(jLabel6)
                             .addComponent(jLabel10))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(jTextField1, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(jButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(0, 0, Short.MAX_VALUE))
                             .addComponent(txtItemName, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtModel, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtBrand, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtQty, javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(txtSpecification, javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cbAStatus, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(cbACategory, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(txtSerial))
+                            .addComponent(txtSerial)
+                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel3Layout.createSequentialGroup()
+                                .addGap(12, 12, 12)
+                                .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 89, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(0, 0, Short.MAX_VALUE)))
                         .addGap(29, 29, 29)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 649, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
                         .addGap(381, 381, 381)
-                        .addComponent(jLabel12)))
+                        .addComponent(jLabel12)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel11)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(txtSearchInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 133, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -536,7 +679,13 @@ public void displayStockItems() {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel12)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel12)
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel11)
+                            .addComponent(txtSearchInfo, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(5, 5, 5)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
@@ -567,18 +716,14 @@ public void displayStockItems() {
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(txtBrand, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel7))
-                        .addGap(15, 15, 15)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel8)
-                            .addComponent(cbAStatus, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(15, 15, 15)
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel9)
                             .addComponent(txtQty, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(32, 32, 32)
+                        .addGap(34, 34, 34)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jButton14, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jButton7, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 524, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addContainerGap(19, Short.MAX_VALUE))
         );
@@ -614,24 +759,41 @@ public void displayStockItems() {
 
         tblStock.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "SerialNo", "ItemName", "Model", "Specification", "Category", "Brand", "Status", "Qty."
+                "ID", "SerialNo", "ItemName", "Model", "Specification", "Category", "Brand", "Qty."
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane2.setViewportView(tblStock);
+        if (tblStock.getColumnModel().getColumnCount() > 0) {
+            tblStock.getColumnModel().getColumn(0).setResizable(false);
+            tblStock.getColumnModel().getColumn(1).setResizable(false);
+            tblStock.getColumnModel().getColumn(2).setResizable(false);
+            tblStock.getColumnModel().getColumn(3).setResizable(false);
+            tblStock.getColumnModel().getColumn(4).setResizable(false);
+            tblStock.getColumnModel().getColumn(5).setResizable(false);
+            tblStock.getColumnModel().getColumn(6).setResizable(false);
+            tblStock.getColumnModel().getColumn(7).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel9Layout = new javax.swing.GroupLayout(jPanel9);
         jPanel9.setLayout(jPanel9Layout);
@@ -660,18 +822,36 @@ public void displayStockItems() {
                 {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "CheckingID", "ItemID ", "Name", "Specification", "Category", "Brand", "Status", "Qty", "Date"
+                "CheckingID", "ItemID ", "Name", "Mdel", "Specification", "Category", "Brand", "Qty", "Date"
             }
         ) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane3.setViewportView(tblChecking);
+        if (tblChecking.getColumnModel().getColumnCount() > 0) {
+            tblChecking.getColumnModel().getColumn(0).setResizable(false);
+            tblChecking.getColumnModel().getColumn(1).setResizable(false);
+            tblChecking.getColumnModel().getColumn(2).setResizable(false);
+            tblChecking.getColumnModel().getColumn(3).setResizable(false);
+            tblChecking.getColumnModel().getColumn(4).setResizable(false);
+            tblChecking.getColumnModel().getColumn(5).setResizable(false);
+            tblChecking.getColumnModel().getColumn(6).setResizable(false);
+            tblChecking.getColumnModel().getColumn(7).setResizable(false);
+            tblChecking.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
         jPanel10.setLayout(jPanel10Layout);
@@ -700,18 +880,35 @@ public void displayStockItems() {
                 {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ReturnID", "ItemID", "Name", "Specifiation", "Category", "Brand", "Status", "Qty.", "Date"
+                "ReturnID", "ItemID", "Name", "Model", "Specifiation", "Category", "Brand", "Qty.", "Date"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane4.setViewportView(tblReturn);
+        if (tblReturn.getColumnModel().getColumnCount() > 0) {
+            tblReturn.getColumnModel().getColumn(0).setResizable(false);
+            tblReturn.getColumnModel().getColumn(1).setResizable(false);
+            tblReturn.getColumnModel().getColumn(2).setResizable(false);
+            tblReturn.getColumnModel().getColumn(4).setResizable(false);
+            tblReturn.getColumnModel().getColumn(5).setResizable(false);
+            tblReturn.getColumnModel().getColumn(6).setResizable(false);
+            tblReturn.getColumnModel().getColumn(7).setResizable(false);
+            tblReturn.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
         jPanel11.setLayout(jPanel11Layout);
@@ -740,18 +937,36 @@ public void displayStockItems() {
                 {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "RepairID", "ItemID", "Name", "Specification", "Catgory", "Brand", "Status", "Qty", "Date"
+                "RepairID", "ItemID", "Name", "Model", "Specification", "Catgory", "Brand", "Qty", "Date"
             }
         ) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane5.setViewportView(tblRepair);
+        if (tblRepair.getColumnModel().getColumnCount() > 0) {
+            tblRepair.getColumnModel().getColumn(0).setResizable(false);
+            tblRepair.getColumnModel().getColumn(1).setResizable(false);
+            tblRepair.getColumnModel().getColumn(2).setResizable(false);
+            tblRepair.getColumnModel().getColumn(3).setResizable(false);
+            tblRepair.getColumnModel().getColumn(4).setResizable(false);
+            tblRepair.getColumnModel().getColumn(5).setResizable(false);
+            tblRepair.getColumnModel().getColumn(6).setResizable(false);
+            tblRepair.getColumnModel().getColumn(7).setResizable(false);
+            tblRepair.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel12Layout = new javax.swing.GroupLayout(jPanel12);
         jPanel12.setLayout(jPanel12Layout);
@@ -780,18 +995,36 @@ public void displayStockItems() {
                 {null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "DisposalID", "ItemID", "Name", "Specification", "Category", "Brand", "Status", "Qty", "Date"
+                "DisposalID", "ItemID", "Name", "Model", "Specification", "Category", "Brand", "Qty", "Date"
             }
         ) {
             Class[] types = new Class [] {
                 java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
             };
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false, false, false
+            };
 
             public Class getColumnClass(int columnIndex) {
                 return types [columnIndex];
             }
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
         });
         jScrollPane6.setViewportView(tblDisposal);
+        if (tblDisposal.getColumnModel().getColumnCount() > 0) {
+            tblDisposal.getColumnModel().getColumn(0).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(1).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(2).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(3).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(4).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(5).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(6).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(7).setResizable(false);
+            tblDisposal.getColumnModel().getColumn(8).setResizable(false);
+        }
 
         javax.swing.GroupLayout jPanel15Layout = new javax.swing.GroupLayout(jPanel15);
         jPanel15.setLayout(jPanel15Layout);
@@ -830,20 +1063,6 @@ public void displayStockItems() {
 
         tabStocks.addTab("tab5", jPanel13);
 
-        jTextField4.setFont(new java.awt.Font("Rockwell", 0, 14)); // NOI18N
-        jTextField4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField4ActionPerformed(evt);
-            }
-        });
-
-        jButton8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/magnifying-glass (1).png"))); // NOI18N
-        jButton8.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton8ActionPerformed(evt);
-            }
-        });
-
         btnAStock.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
         btnAStock.setText("Stock");
         btnAStock.addActionListener(new java.awt.event.ActionListener() {
@@ -861,7 +1080,7 @@ public void displayStockItems() {
         });
 
         btnARepair.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnARepair.setText("Repair");
+        btnARepair.setText("Return");
         btnARepair.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnARepairActionPerformed(evt);
@@ -869,7 +1088,7 @@ public void displayStockItems() {
         });
 
         btnAReturn.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
-        btnAReturn.setText("Return");
+        btnAReturn.setText("Repair");
         btnAReturn.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAReturnActionPerformed(evt);
@@ -883,6 +1102,15 @@ public void displayStockItems() {
                 btnADisposalActionPerformed(evt);
             }
         });
+
+        txtSearchItem.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtSearchItemActionPerformed(evt);
+            }
+        });
+
+        jLabel16.setFont(new java.awt.Font("Rockwell", 1, 14)); // NOI18N
+        jLabel16.setText("Search:");
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -907,27 +1135,29 @@ public void displayStockItems() {
                         .addComponent(btnAReturn)
                         .addGap(2, 2, 2)
                         .addComponent(btnADisposal)
-                        .addGap(399, 399, 399)
-                        .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, 161, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(387, 387, 387)
+                        .addComponent(jLabel16)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(txtSearchItem, javax.swing.GroupLayout.PREFERRED_SIZE, 146, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGap(5, 5, 5)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(txtSearchItem)
                         .addComponent(btnAStock)
-                        .addComponent(btnAChecking)
-                        .addComponent(btnARepair)
-                        .addComponent(btnAReturn)
-                        .addComponent(btnADisposal)
-                        .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jButton8, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel16))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(btnARepair, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnAReturn, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnADisposal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnAChecking, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)))
                 .addComponent(tabStocks, javax.swing.GroupLayout.PREFERRED_SIZE, 617, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(200, 200, 200))
         );
@@ -984,14 +1214,6 @@ public void displayStockItems() {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtQtyActionPerformed
 
-    private void jTextField4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField4ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField4ActionPerformed
-
-    private void jButton8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton8ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton8ActionPerformed
-
     private void btnAStockActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAStockActionPerformed
         // TODO add your handling code here:
         tabStocks.setSelectedIndex(0);
@@ -999,22 +1221,26 @@ public void displayStockItems() {
     }//GEN-LAST:event_btnAStockActionPerformed
 
     private void btnACheckingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnACheckingActionPerformed
-        tabStocks.setSelectedIndex(1);    // TODO add your handling code here:
+        tabStocks.setSelectedIndex(1);    
+        displayCheckingData();
     }//GEN-LAST:event_btnACheckingActionPerformed
 
     private void btnARepairActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnARepairActionPerformed
         // TODO add your handling code here:
         tabStocks.setSelectedIndex(2);
+        displayReturn();
     }//GEN-LAST:event_btnARepairActionPerformed
 
     private void btnAReturnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAReturnActionPerformed
         // TODO add your handling code here:
         tabStocks.setSelectedIndex(3);
+        displayRepair();
     }//GEN-LAST:event_btnAReturnActionPerformed
 
     private void btnADisposalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnADisposalActionPerformed
         // TODO add your handling code here:
         tabStocks.setSelectedIndex(4);
+        displayDisposal();
     }//GEN-LAST:event_btnADisposalActionPerformed
 
     private void jButton7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton7ActionPerformed
@@ -1028,6 +1254,98 @@ public void displayStockItems() {
         // TODO add your handling code here:
         clear();
     }//GEN-LAST:event_jButton14ActionPerformed
+
+    private void txtSearchItemActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchItemActionPerformed
+        // TODO add your handling code here:
+        String searchText = txtSearchItem.getText().trim();
+
+        DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
+        model.setRowCount(0); // Clear existing rows
+
+        try {
+            String sql = "SELECT * FROM Stock WHERE ItemName LIKE ? OR Category LIKE ? OR Brand LIKE ?";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+            pst.setString(3, "%" + searchText + "%");
+            rst = pst.executeQuery();
+
+            while (rst.next()) {
+                int ItemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String modelValue = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int quantity = rst.getInt("Qty");
+
+                // Map database column names to JTable column names
+                model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            System.err.println("Error searching items in the database.");
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_txtSearchItemActionPerformed
+
+    private void txtSearchInfoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchInfoActionPerformed
+        // TODO add your handling code here:
+        String searchText = txtSearchInfo.getText().trim();
+
+        DefaultTableModel model = (DefaultTableModel) tblDataInfo.getModel();
+        model.setRowCount(0); // Clear existing rows
+
+        try {
+            String sql = "SELECT * FROM Stock WHERE ItemName LIKE ? OR Category LIKE ? OR Brand LIKE ?";
+            pst = conn.prepareStatement(sql);
+            pst.setString(1, "%" + searchText + "%");
+            pst.setString(2, "%" + searchText + "%");
+            pst.setString(3, "%" + searchText + "%");
+            rst = pst.executeQuery();
+
+            while (rst.next()) {
+                int ItemID = rst.getInt("ItemID");
+                int serialNumber = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String modelValue = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int quantity = rst.getInt("Qty");
+
+                // Map database column names to JTable column names
+                model.addRow(new Object[]{ItemID, serialNumber, itemName, modelValue, specification, category, brand, quantity});
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            System.err.println("Error searching items in the database.");
+        } finally {
+            try {
+                if (rst != null) {
+                    rst.close();
+                }
+                if (pst != null) {
+                    pst.close();
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_txtSearchInfoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1071,27 +1389,26 @@ public void displayStockItems() {
     private javax.swing.JButton btnAReturn;
     private javax.swing.JButton btnAStock;
     private javax.swing.JComboBox<String> cbACategory;
-    private javax.swing.JComboBox<String> cbAStatus;
     private javax.swing.JButton jButton14;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton7;
-    private javax.swing.JButton jButton8;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
+    private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel10;
@@ -1114,7 +1431,6 @@ public void displayStockItems() {
     private javax.swing.JScrollPane jScrollPane5;
     private javax.swing.JScrollPane jScrollPane6;
     private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField4;
     private javax.swing.JTabbedPane tabAdmin;
     private javax.swing.JTabbedPane tabStocks;
     private javax.swing.JTable tblChecking;
@@ -1127,6 +1443,8 @@ public void displayStockItems() {
     private javax.swing.JTextField txtItemName;
     private javax.swing.JTextField txtModel;
     private javax.swing.JTextField txtQty;
+    private javax.swing.JTextField txtSearchInfo;
+    private javax.swing.JTextField txtSearchItem;
     private javax.swing.JTextField txtSerial;
     private javax.swing.JTextField txtSpecification;
     // End of variables declaration//GEN-END:variables

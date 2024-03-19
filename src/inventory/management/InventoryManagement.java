@@ -13,24 +13,8 @@ import java.sql.SQLException;
  * @Gabawan
  */
 public class InventoryManagement {
-        Connection conn = null;
-    /**
-     * @param args the command line arguments
-     */
-        public static Connection connectDB(){    
-        try{
-            Class.forName("org.sqlite.JDBC");
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-            System.out.println("Connected");
-            
-            return conn;
-        }catch(ClassNotFoundException | SQLException e){
-            System.out.println("Connection Failed" +e);
-            return null;
-        }
-    }
+  
     public static void main(String[] args) {
         // TODO code application logic here
-        connectDB();
-    }
+        new LogIn().setVisible(true);    }
 }

@@ -31,6 +31,7 @@ public class DBConnection {
     }
     public static void main(String[] args) {
         // TODO code application logic here
+        
         connectDB();
         new LogIn().setVisible(true);
     }
