@@ -27,7 +27,7 @@ public class LogIn extends javax.swing.JFrame {
      */
     public LogIn() {
         initComponents();
-        conn = DBConnection.connectDB();
+        conn = InventoryManagement.connectDB();
         
     }
     //Clear Functionality

@@ -24,7 +24,7 @@ public class User extends javax.swing.JFrame {
 
     public User() {
         initComponents();
-        conn = DBConnection.connectDB();
+        conn = InventoryManagement.connectDB();
         setExtendedState(User.MAXIMIZED_BOTH);
     }
 //Functionalities Method
