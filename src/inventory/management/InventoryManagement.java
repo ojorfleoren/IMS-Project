@@ -30,8 +30,12 @@ public class InventoryManagement {
         }
     }
     public static void main(String[] args) {
-        // TODO code application logic here
-        connectDB();
-        new LogIn().setVisible(true);
-    }
+    // TODO code application logic here
+    connectDB();
+    java.awt.EventQueue.invokeLater(new Runnable() {
+        public void run() {
+            new LogIn().setVisible(true);
+        }
+    });
+  }
 }

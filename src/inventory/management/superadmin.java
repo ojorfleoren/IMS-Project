@@ -340,6 +340,114 @@ private void saveItem() {
     btnSaveItem.setEnabled(false);
 }
 //End--------------------------------------------------------------------------End
+private String getItemSerialNumber(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT SerialNo FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("SerialNo");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item serial number.");
+    }
+    return null;
+}
+private String getItemName(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT ItemName FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("ItemName");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item name.");
+    }
+    return null;
+}
+private String getItemModel(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Model FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Model");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item name.");
+    }
+    return null;
+}
+private String getItemSpecification(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Specification FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Specification");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item name.");
+    }
+    return null;
+}
+private String getCategory(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Category FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Category");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item category.");
+    }
+    return null;
+}
+private String getBrand(int itemID) {
+    try {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        String sql = "SELECT Brand FROM Stock WHERE ItemID = ?";
+        try (PreparedStatement pst = conn.prepareStatement(sql)) {
+            pst.setInt(1, itemID);
+            try (ResultSet rs = pst.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("Brand");
+                }
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving item brand.");
+    }
+    return null;
+}
 //Transfer from stock Functionlity
 public void transferSelectedItem() {
     try {
@@ -407,35 +515,13 @@ public void transferSelectedItem() {
                 updatePst.executeUpdate();
             }
 
-            // Check if the item already exists in the destination table
-            String checkExistingSql = "SELECT Qty FROM " + selectedArea + " WHERE ItemID = ?";
-            int existingQty = 0;
-
-            try (PreparedStatement checkExistingPst = conn.prepareStatement(checkExistingSql)) {
-                checkExistingPst.setInt(1, itemID);
-                ResultSet rs = checkExistingPst.executeQuery();
-
-                if (rs.next()) {
-                    existingQty = rs.getInt("Qty");
-                }
-            }
-
-            // Insert a new record into the destination table or update existing quantity
-            String insertOrUpdateSql;
-            if (existingQty > 0) {
-                insertOrUpdateSql = "UPDATE " + selectedArea + " SET Qty = Qty + ? WHERE ItemID = ?";
-            } else {
-                insertOrUpdateSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
-            }
-
-            try (PreparedStatement insertOrUpdatePst = conn.prepareStatement(insertOrUpdateSql)) {
-                insertOrUpdatePst.setInt(1, transferQty);
-                insertOrUpdatePst.setInt(2, itemID);
-                if (existingQty == 0) {
-                    insertOrUpdatePst.setInt(2, transferQty);
-                    insertOrUpdatePst.setDate(3, transferDate);
-                }
-                insertOrUpdatePst.executeUpdate();
+            // Insert a new record into the destination table
+            String insertSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
+            try (PreparedStatement insertPst = conn.prepareStatement(insertSql)) {
+                insertPst.setInt(1, itemID);
+                insertPst.setInt(2, transferQty);
+                insertPst.setDate(3, transferDate);
+                insertPst.executeUpdate();
             }
 
             JOptionPane.showMessageDialog(this, "Transfer completed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
@@ -447,6 +533,7 @@ public void transferSelectedItem() {
         System.err.println("Error during item transfer.");
     }
 }
+
 //END Transfer
 //Transfer from Checking area > Destination: Return|Repair|Disposal
 public void transferCheckingItem(String sourceTable) {
@@ -899,6 +986,107 @@ public void transferRepairItem() {
     }
 }
 //End-----------------------------------------------------------------------End
+public void displayReturn() {
+    DefaultTableModel returnModel = (DefaultTableModel) tblReturn.getModel();
+    returnModel.setRowCount(0); // Clear existing rows
+
+    try {
+        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification,  s.Category, s.Brand, r.Qty AS ReturnedQty, r.Date " +
+                     "FROM Return r " +
+                     "LEFT JOIN Stock s ON r.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int returnID = rst.getInt("ReturnID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int returnedQty = rst.getInt("ReturnedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Return table with all the information
+                returnModel.addRow(new Object[]{returnID, itemID, serialNo, itemName, model, specification, category, brand, returnedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Return data from the database.");
+    }
+}
+public void displayRepair() {
+    DefaultTableModel repairModel = (DefaultTableModel) tblRepair.getModel();
+    repairModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Repair area
+        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.Model, s.Specification, s.Category, s.Brand, rep.Qty AS RepairedQty, rep.Date " +
+                     "FROM Repair rep " +
+                     "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int repairID = rst.getInt("RepairID");
+                int itemID = rst.getInt("ItemID");
+                String serialNo = getItemSerialNumber(itemID);
+                String itemName = getItemName(itemID); // Utilize getItemName method
+                String model = getItemModel(itemID); // Utilize getItemModel method
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int repairedQty = rst.getInt("RepairedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Repair table with all the information
+                repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, model, specification, category, brand, repairedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Repair data from the database.");
+    }
+}
+public void displayDisposal() {
+    DefaultTableModel disposalModel = (DefaultTableModel) tblDisposal.getModel();
+    disposalModel.setRowCount(0); // Clear existing rows
+
+    try {
+        // Modify the SQL query for Disposal area
+        String sql = "SELECT d.DisposalID, d.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, d.Qty AS DisposedQty, d.Date " +
+                     "FROM Disposal d " +
+                     "LEFT JOIN Stock s ON d.ItemID = s.ItemID ";
+
+        try (PreparedStatement pst = conn.prepareStatement(sql);
+             ResultSet rst = pst.executeQuery()) {
+
+            while (rst.next()) {
+                int disposalID = rst.getInt("DisposalID");
+                int itemID = rst.getInt("ItemID");
+                int serialNo = rst.getInt("SerialNo");
+                String itemName = rst.getString("ItemName");
+                String model = rst.getString("Model");
+                String specification = rst.getString("Specification");
+                String category = rst.getString("Category");
+                String brand = rst.getString("Brand");
+                int disposedQty = rst.getInt("DisposedQty");
+                Date date = rst.getDate("Date");
+
+                // Add a row to the Disposal table with all the information
+                disposalModel.addRow(new Object[]{disposalID, itemID, serialNo, itemName, model, specification, category, brand, disposedQty, date});
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving Disposal data from the database.");
+    }
+}
 public void displayCheckingData() {
     DefaultTableModel checkingModel = (DefaultTableModel) tblChecking.getModel();
     checkingModel.setRowCount(0); // Clear existing rows
@@ -969,114 +1157,7 @@ public void displayReturnData() {
     }
 }
 //Handler for attributes
-private String getItemSerialNumber(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT SerialNo FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("SerialNo");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item serial number.");
-    }
-    return null;
-}
-private String getItemName(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT ItemName FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("ItemName");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item name.");
-    }
-    return null;
-}
-private String getItemModel(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT Model FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("Model");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item name.");
-    }
-    return null;
-}
-private String getItemSpecification(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT Specification FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("Specification");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item name.");
-    }
-    return null;
-}
-private String getCategory(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT Category FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("Category");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item category.");
-    }
-    return null;
-}
-private String getBrand(int itemID) {
-    try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
-        String sql = "SELECT Brand FROM Stock WHERE ItemID = ?";
-        try (PreparedStatement pst = conn.prepareStatement(sql)) {
-            pst.setInt(1, itemID);
-            try (ResultSet rs = pst.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString("Brand");
-                }
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving item brand.");
-    }
-    return null;
-}
+
 private void transferItems(int itemID, int currentQty, int transferQty, String sourceTable, String sourceArea, String destinationTable, String destinationArea, java.sql.Date transferDate) {
     try {
         // Update quantity in the source table
@@ -1194,107 +1275,7 @@ private String getDestinationTableName(int destinationTableIndex) {
             throw new IllegalArgumentException("Invalid destination table index");
     }
 }
-public void displayReturn() {
-    DefaultTableModel returnModel = (DefaultTableModel) tblReturn.getModel();
-    returnModel.setRowCount(0); // Clear existing rows
 
-    try {
-        String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification,  s.Category, s.Brand, r.Qty AS ReturnedQty, r.Date " +
-                     "FROM Return r " +
-                     "LEFT JOIN Stock s ON r.ItemID = s.ItemID ";
-
-        try (PreparedStatement pst = conn.prepareStatement(sql);
-             ResultSet rst = pst.executeQuery()) {
-
-            while (rst.next()) {
-                int returnID = rst.getInt("ReturnID");
-                int itemID = rst.getInt("ItemID");
-                int serialNo = rst.getInt("SerialNo");
-                String itemName = rst.getString("ItemName");
-                String model = rst.getString("Model");
-                String specification = rst.getString("Specification");
-                String category = rst.getString("Category");
-                String brand = rst.getString("Brand");
-                int returnedQty = rst.getInt("ReturnedQty");
-                Date date = rst.getDate("Date");
-
-                // Add a row to the Return table with all the information
-                returnModel.addRow(new Object[]{returnID, itemID, serialNo, itemName, model, specification, category, brand, returnedQty, date});
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving Return data from the database.");
-    }
-}
-public void displayRepair() {
-    DefaultTableModel repairModel = (DefaultTableModel) tblRepair.getModel();
-    repairModel.setRowCount(0); // Clear existing rows
-
-    try {
-        // Modify the SQL query for Repair area
-        String sql = "SELECT rep.RepairID, rep.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, rep.Qty AS RepairedQty, rep.Date " +
-                     "FROM Repair rep " +
-                     "LEFT JOIN Stock s ON rep.ItemID = s.ItemID ";
-
-        try (PreparedStatement pst = conn.prepareStatement(sql);
-             ResultSet rst = pst.executeQuery()) {
-
-            while (rst.next()) {
-                int repairID = rst.getInt("RepairID");
-                int itemID = rst.getInt("ItemID");
-                int serialNo = rst.getInt("SerialNo");
-                String itemName = rst.getString("ItemName");
-                String model = rst.getString("Model");
-                String specification = rst.getString("Specification");
-                String category = rst.getString("Category");
-                String brand = rst.getString("Brand");
-                int repairedQty = rst.getInt("RepairedQty");
-                Date date = rst.getDate("Date");
-
-                // Add a row to the Repair table with all the information
-                repairModel.addRow(new Object[]{repairID, itemID, serialNo, itemName, model, specification, category, brand, repairedQty, date});
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving Repair data from the database.");
-    }
-}
-public void displayDisposal() {
-    DefaultTableModel disposalModel = (DefaultTableModel) tblDisposal.getModel();
-    disposalModel.setRowCount(0); // Clear existing rows
-
-    try {
-        // Modify the SQL query for Disposal area
-        String sql = "SELECT d.DisposalID, d.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, d.Qty AS DisposedQty, d.Date " +
-                     "FROM Disposal d " +
-                     "LEFT JOIN Stock s ON d.ItemID = s.ItemID ";
-
-        try (PreparedStatement pst = conn.prepareStatement(sql);
-             ResultSet rst = pst.executeQuery()) {
-
-            while (rst.next()) {
-                int disposalID = rst.getInt("DisposalID");
-                int itemID = rst.getInt("ItemID");
-                int serialNo = rst.getInt("SerialNo");
-                String itemName = rst.getString("ItemName");
-                String model = rst.getString("Model");
-                String specification = rst.getString("Specification");
-                String category = rst.getString("Category");
-                String brand = rst.getString("Brand");
-                int disposedQty = rst.getInt("DisposedQty");
-                Date date = rst.getDate("Date");
-
-                // Add a row to the Disposal table with all the information
-                disposalModel.addRow(new Object[]{disposalID, itemID, serialNo, itemName, model, specification, category, brand, disposedQty, date});
-            }
-        }
-    } catch (SQLException e) {
-        e.printStackTrace();
-        System.err.println("Error retrieving Disposal data from the database.");
-    }
-}
 //Validation method
 private boolean validateFields() {
         if (txtSerial.getText().isEmpty() || txtItemName.getText().isEmpty() ||

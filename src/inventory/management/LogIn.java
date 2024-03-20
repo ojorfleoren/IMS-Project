@@ -216,8 +216,6 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         jLabel6.setForeground(new java.awt.Color(255, 255, 255));
         jLabel6.setText("Log as");
 
-        jLabel7.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/logo_1.png"))); // NOI18N
-
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -304,7 +302,6 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         );
 
         jLabel2.setBackground(new java.awt.Color(153, 153, 153));
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/image/background.png"))); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
