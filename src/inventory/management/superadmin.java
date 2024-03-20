@@ -54,8 +54,29 @@ public superadmin() {
         tblChecking.getColumnModel().getColumn(1).setPreferredWidth(5);
         tblChecking.getColumnModel().getColumn(2).setPreferredWidth(20);
         tblChecking.getColumnModel().getColumn(7).setPreferredWidth(10);
-        
+        displayTotalDataCount();
     }
+
+public void displayTotalDataCount() {
+    try {
+        // Execute a SQL query to sum the total quantity in the "Qty" column of the "Stock" table
+        String sumSql = "SELECT SUM(Qty) AS total FROM Stock";
+        try (PreparedStatement sumPst = conn.prepareStatement(sumSql);
+             ResultSet rs = sumPst.executeQuery()) {
+
+            if (rs.next()) {
+                int totalQuantity = rs.getInt("total");
+
+                // Update the label with the total quantity
+                lblCount.setText(Integer.toString(totalQuantity));
+            }
+        }
+    } catch (SQLException e) {
+        e.printStackTrace();
+        System.err.println("Error retrieving total quantity.");
+    }
+}
+
 //Search Functionality
 public void searchItems(String searchText) {
     DefaultTableModel model = (DefaultTableModel) tblStock.getModel();
@@ -1749,6 +1770,7 @@ private void clearUserFields() {
         dashboard = new javax.swing.JPanel();
         jPanel5 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
+        lblCount = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         jPanel6 = new javax.swing.JPanel();
         jLabel3 = new javax.swing.JLabel();
@@ -1889,6 +1911,9 @@ private void clearUserFields() {
                 .addGap(29, 29, 29))
         );
 
+        lblCount.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
+        lblCount.setText("0");
+
         javax.swing.GroupLayout dashboardLayout = new javax.swing.GroupLayout(dashboard);
         dashboard.setLayout(dashboardLayout);
         dashboardLayout.setHorizontalGroup(
@@ -1896,12 +1921,18 @@ private void clearUserFields() {
             .addGroup(dashboardLayout.createSequentialGroup()
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
+            .addGroup(dashboardLayout.createSequentialGroup()
+                .addGap(150, 150, 150)
+                .addComponent(lblCount, javax.swing.GroupLayout.PREFERRED_SIZE, 31, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         dashboardLayout.setVerticalGroup(
             dashboardLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(dashboardLayout.createSequentialGroup()
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 644, Short.MAX_VALUE))
+                .addGap(92, 92, 92)
+                .addComponent(lblCount, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 405, Short.MAX_VALUE))
         );
 
         tabPane.addTab("tab1", dashboard);
@@ -2215,7 +2246,7 @@ private void clearUserFields() {
                             .addComponent(txtClear))
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 527, Short.MAX_VALUE)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 454, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(btnView)
@@ -2465,7 +2496,7 @@ private void clearUserFields() {
                             .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel26, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(7, 7, 7)))
-                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel11Layout.createSequentialGroup()
                         .addComponent(jLabel21)
                         .addGap(5, 5, 5)
@@ -2497,8 +2528,7 @@ private void clearUserFields() {
                         .addGap(22, 22, 22)
                         .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(btnClear)
-                            .addComponent(btnSaveUser))
-                        .addGap(0, 0, Short.MAX_VALUE))
+                            .addComponent(btnSaveUser)))
                     .addGroup(jPanel11Layout.createSequentialGroup()
                         .addComponent(jScrollPane7, javax.swing.GroupLayout.PREFERRED_SIZE, 438, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
@@ -3138,7 +3168,7 @@ private void clearUserFields() {
     private void btnDashboardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDashboardActionPerformed
         // TODO add your handling code here:
         tabPane.setSelectedIndex(0);
-
+        displayTotalDataCount();
         
     }//GEN-LAST:event_btnDashboardActionPerformed
 
@@ -3604,6 +3634,7 @@ private void clearUserFields() {
     private javax.swing.JTabbedPane jTabbedPane2;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
+    private javax.swing.JLabel lblCount;
     private javax.swing.JTabbedPane tabPane;
     private javax.swing.JTabbedPane tabSuperadmin;
     private javax.swing.JTable tblAccounts;

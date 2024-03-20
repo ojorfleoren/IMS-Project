@@ -72,7 +72,7 @@ public void insertItem() {
 
         if (option == JOptionPane.YES_OPTION) {
             String sql = "INSERT INTO Stock (SerialNo, ItemName, Model, Specification, Category, Brand, Qty) " +
-                         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                         "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             pst = conn.prepareStatement(sql);
             pst.setInt(1, serialNum);
@@ -1199,13 +1199,13 @@ public void displayDisposal() {
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
         // TODO add your handling code here:
-        tabAdmin.setSelectedIndex(1);
+        tabAdmin.setSelectedIndex(2);
         displayDataItems();
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-           tabAdmin.setSelectedIndex(2);
+           tabAdmin.setSelectedIndex(1);
            displayStockItems();
     }//GEN-LAST:event_jButton4ActionPerformed
 
