@@ -561,7 +561,6 @@ public void transferSelectedItem() {
         System.err.println("Error during item transfer.");
     }
 }
-
 //END Transfer
 //Transfer from Checking area > Destination: Return|Repair|Disposal
 public void transferCheckingItem(String sourceTable) {
