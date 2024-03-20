@@ -54,6 +54,7 @@ public superadmin() {
         tblChecking.getColumnModel().getColumn(1).setPreferredWidth(5);
         tblChecking.getColumnModel().getColumn(2).setPreferredWidth(20);
         tblChecking.getColumnModel().getColumn(7).setPreferredWidth(10);
+        //Display the total quantity from the database
         displayTotalDataCount();
     }
 
