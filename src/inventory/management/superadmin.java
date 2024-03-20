@@ -467,7 +467,13 @@ public void transferSelectedItem() {
             return; // User canceled or entered an empty quantity
         }
 
-        int transferQty = Integer.parseInt(quantityStr);
+        int transferQty;
+        try {
+            transferQty = Integer.parseInt(quantityStr);
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Invalid quantity. Please enter a valid number.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         if (transferQty <= 0 || transferQty > currentQty) {
             JOptionPane.showMessageDialog(this, "Invalid quantity to transfer.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -515,20 +521,42 @@ public void transferSelectedItem() {
                 updatePst.executeUpdate();
             }
 
-            // Insert a new record into the destination table
-            String insertSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
-            try (PreparedStatement insertPst = conn.prepareStatement(insertSql)) {
-                insertPst.setInt(1, itemID);
-                insertPst.setInt(2, transferQty);
-                insertPst.setDate(3, transferDate);
-                insertPst.executeUpdate();
+            // Check if the item already exists in the destination table
+            String selectSql = "SELECT Qty FROM " + selectedArea + " WHERE ItemID = ?";
+            int existingQty = 0;
+            try (PreparedStatement selectPst = conn.prepareStatement(selectSql)) {
+                selectPst.setInt(1, itemID);
+                try (ResultSet resultSet = selectPst.executeQuery()) {
+                    if (resultSet.next()) {
+                        existingQty = resultSet.getInt("Qty");
+                    }
+                }
+            }
+
+            // Insert a new record into the destination table or update existing quantity
+            String insertOrUpdateSql;
+            if (existingQty > 0) {
+                insertOrUpdateSql = "UPDATE " + selectedArea + " SET Qty = ? WHERE ItemID = ?";
+            } else {
+                insertOrUpdateSql = "INSERT INTO " + selectedArea + " (ItemID, Qty, Date) VALUES (?, ?, ?)";
+            }
+            try (PreparedStatement insertOrUpdatePst = conn.prepareStatement(insertOrUpdateSql)) {
+                if (existingQty > 0) {
+                    insertOrUpdatePst.setInt(1, existingQty + transferQty);
+                    insertOrUpdatePst.setInt(2, itemID);
+                } else {
+                    insertOrUpdatePst.setInt(1, itemID);
+                    insertOrUpdatePst.setInt(2, transferQty);
+                    insertOrUpdatePst.setDate(3, transferDate);
+                }
+                insertOrUpdatePst.executeUpdate();
             }
 
             JOptionPane.showMessageDialog(this, "Transfer completed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
             displayCombinedData(); // Refresh the JTable after transfer
             displayCheckingData(); // Display Checking data
         }
-    } catch (SQLException | NumberFormatException e) {
+    } catch (SQLException e) {
         e.printStackTrace();
         System.err.println("Error during item transfer.");
     }
