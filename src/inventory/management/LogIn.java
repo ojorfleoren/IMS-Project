@@ -313,6 +313,7 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         );
 
         jLabel2.setBackground(new java.awt.Color(153, 153, 153));
+        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/Purple Simple Login Website Application Desktop Prototype.png"))); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
