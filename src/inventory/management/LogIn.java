@@ -5,6 +5,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.swing.*;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -20,6 +21,21 @@ import java.sql.SQLException;
  */
 public class LogIn extends javax.swing.JFrame {
     Connection conn = null;
+    /**
+     * @param args the command line arguments
+     */
+        public static Connection connectDB(){    
+        try{
+            Class.forName("org.sqlite.JDBC");
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+            System.out.println("Connected");
+            
+            return conn;
+        }catch(ClassNotFoundException | SQLException e){
+            System.out.println("Connection Failed" +e);
+            return null;
+        }
+    }
     PreparedStatement pst = null;
     ResultSet rst = null;
     /**
@@ -27,7 +43,7 @@ public class LogIn extends javax.swing.JFrame {
      */
     public LogIn() {
         initComponents();
-        conn = InventoryManagement.connectDB();
+        conn = LogIn.connectDB();
         
     }
     //Clear Functionality
@@ -108,14 +124,14 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
 }
     private void openAppropriateFrame(String accountType) {
     switch (accountType) {
-        case "User":
-            SwingUtilities.invokeLater(() -> new User().setVisible(true));
+        case "SuperAdmin":
+            SwingUtilities.invokeLater(() -> new superadmin().setVisible(true));
             break;
         case "Admin":
             SwingUtilities.invokeLater(() -> new admin().setVisible(true));
             break;
-        case "SuperAdmin":
-            SwingUtilities.invokeLater(() -> new superadmin().setVisible(true));
+        case "User":
+            SwingUtilities.invokeLater(() -> new User().setVisible(true));
             break;
         default:
             // Handle unexpected account type

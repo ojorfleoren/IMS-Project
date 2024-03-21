@@ -16,7 +16,7 @@ public class InventoryManagement {
    Connection conn = null;
     /**
      * @param args the command line arguments
-     */
+     *//*
         public static Connection connectDB(){    
         try{
             Class.forName("org.sqlite.JDBC");
@@ -27,11 +27,11 @@ public class InventoryManagement {
         }catch(ClassNotFoundException | SQLException e){
             System.out.println("Connection Failed" +e);
             return null;
-        }
-    }
+        }*/
+    
     public static void main(String[] args) {
     // TODO code application logic here
-    connectDB();
+    //connectDB();
     java.awt.EventQueue.invokeLater(new Runnable() {
         public void run() {
             new LogIn().setVisible(true);
