@@ -128,7 +128,7 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
             SwingUtilities.invokeLater(() -> new superadmin().setVisible(true));
             break;
         case "Admin":
-            SwingUtilities.invokeLater(() -> new admin().setVisible(true));
+            SwingUtilities.invokeLater(() -> new addmin().setVisible(true));
             break;
         case "User":
             SwingUtilities.invokeLater(() -> new User().setVisible(true));
