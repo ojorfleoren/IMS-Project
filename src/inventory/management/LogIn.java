@@ -38,69 +38,72 @@ public class LogIn extends javax.swing.JFrame {
     }
     PreparedStatement pst = null;
     ResultSet rst = null;
-    /**
-     * Creates new form LogIn
-     */
+    
+    //
     public LogIn() {
         initComponents();
         conn = LogIn.connectDB();
         
     }
     //Clear Functionality
-    public void clear(){
+    public void clear(){ 
         txtUsername.setText("");
         txtPassword.setText("");
-        cbAccountType.setSelectedIndex(0);
+        //cbAccountType.setSelectedIndex(0);
         chkPass.setSelected(false);
     }
-    private void login() {
-        String username = txtUsername.getText();
-        String password = new String(txtPassword.getPassword());
-        String accountType = (String) cbAccountType.getSelectedItem();
+/*    
+private void login() {
+    String username = txtUsername.getText();
+    String password = new String(txtPassword.getPassword());
+    String accountType = (String) cbAccountType.getSelectedItem();
 
-        if (username.isEmpty() || password.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+    if (username.isEmpty() || password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
-        try {
-            String query = "SELECT * FROM Accounts WHERE UserName = ? AND AccountType = ?";
-            pst = conn.prepareStatement(query);
-            pst.setString(1, username);
-            pst.setString(2, accountType);
-            rst = pst.executeQuery();
+    int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to login?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (choice != JOptionPane.YES_OPTION) {
+        return; // User chose not to login
+    }
+    try {
+        String query = "SELECT * FROM Accounts WHERE UserName = ? AND AccountType = ?";
+        pst = conn.prepareStatement(query);
+        pst.setString(1, username);
+        pst.setString(2, accountType);
+        rst = pst.executeQuery();
 
-            if (rst.next()) {
-                String storedHashedPassword = rst.getString("PassWord");
-                if (verifyPassword(password, storedHashedPassword)) {
-                    JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
-                    dispose();
-                    openAppropriateFrame(accountType);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
-                    clear();
-                }
+        if (rst.next()) {
+            String storedHashedPassword = rst.getString("PassWord");
+            if (verifyPassword(password, storedHashedPassword)) {
+                JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+                openAppropriateFrame(accountType);
             } else {
                 JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
                 clear();
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
-        } finally {
-            try {
-                if (rst != null) {
-                    rst.close();
-                }
-                if (pst != null) {
-                    pst.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+        } else {
+            JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+            clear();
+        }
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
+    } finally {
+        try {
+            if (rst != null) {
+                rst.close();
             }
+            if (pst != null) {
+                pst.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
-
+}*/
 private boolean verifyPassword(String password, String storedHashedPassword) {
     try {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -122,7 +125,7 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         return false;
     }
 }
-    private void openAppropriateFrame(String accountType) {
+private void openAppropriateFrame(String accountType) {
     switch (accountType) {
         case "SuperAdmin":
             SwingUtilities.invokeLater(() -> new superadmin().setVisible(true));
@@ -134,11 +137,59 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
             SwingUtilities.invokeLater(() -> new User().setVisible(true));
             break;
         default:
-            // Handle unexpected account type
             break;
     }
 }
+private void login() {
+    String username = txtUsername.getText();
+    String password = new String(txtPassword.getPassword());
 
+    if (username.isEmpty() || password.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Username and Password cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    int choice = JOptionPane.showConfirmDialog(this, "Are you sure you want to login?", "Confirmation", JOptionPane.YES_NO_OPTION);
+    if (choice != JOptionPane.YES_OPTION) {
+        return; // User chose not to login
+    }
+    try {
+        String query = "SELECT * FROM Accounts WHERE UserName = ?";
+        pst = conn.prepareStatement(query);
+        pst.setString(1, username);
+        rst = pst.executeQuery();
+
+        if (rst.next()) {
+            String storedHashedPassword = rst.getString("PassWord");
+            if (verifyPassword(password, storedHashedPassword)) {
+                String accountType = rst.getString("AccountType");
+                JOptionPane.showMessageDialog(this, "Login Successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                dispose();
+                openAppropriateFrame(accountType);
+            } else {
+                JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+                clear();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Invalid credentials.", "Error", JOptionPane.ERROR_MESSAGE);
+            clear();
+        }
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error during login.", "Error", JOptionPane.ERROR_MESSAGE);
+    } finally {
+        try {
+            if (rst != null) {
+                rst.close();
+            }
+            if (pst != null) {
+                pst.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
 
 
     /**
@@ -163,8 +214,6 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         jLabel1 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        cbAccountType = new javax.swing.JComboBox<>();
-        jLabel6 = new javax.swing.JLabel();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
@@ -228,11 +277,6 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
         jLabel5.setForeground(new java.awt.Color(255, 255, 255));
         jLabel5.setText("Show Password");
 
-        cbAccountType.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "User", "Admin", "SuperAdmin" }));
-
-        jLabel6.setForeground(new java.awt.Color(255, 255, 255));
-        jLabel6.setText("Log as");
-
         jLabel8.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Image/logos_small_67RB7KTLSNXPWKW6NAG7-56a62ad1-removebg-preview (2) (1).png"))); // NOI18N
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -256,21 +300,14 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
                         .addGap(27, 27, 27)
                         .addComponent(lblpassword))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(175, 175, 175)
-                        .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, 79, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(25, 25, 25)
-                        .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(25, 25, 25)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addComponent(chkPass)
                                 .addGap(6, 6, 6)
-                                .addComponent(jLabel5)
-                                .addGap(73, 73, 73)
-                                .addComponent(jLabel6))
-                            .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(jLabel5))
+                            .addComponent(txtPassword, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnLogin, javax.swing.GroupLayout.PREFERRED_SIZE, 229, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(38, 38, 38)
                         .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 199, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -299,7 +336,7 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
                                 .addComponent(jLabel7)))
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(27, Short.MAX_VALUE)
+                        .addContainerGap(14, Short.MAX_VALUE)
                         .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(10, 10, 10)))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
@@ -318,14 +355,10 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
                         .addGap(24, 24, 24))
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                         .addComponent(chkPass)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel5)
-                            .addComponent(jLabel6))))
-                .addGap(0, 0, 0)
-                .addComponent(cbAccountType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(31, 31, 31)
+                        .addComponent(jLabel5)))
+                .addGap(18, 18, 18)
                 .addComponent(btnLogin)
-                .addGap(18, 18, 18))
+                .addGap(53, 53, 53))
         );
 
         jLabel2.setBackground(new java.awt.Color(153, 153, 153));
@@ -346,7 +379,7 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
                 .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 607, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 1, Short.MAX_VALUE))
             .addGroup(layout.createSequentialGroup()
-                .addGap(23, 23, 23)
+                .addGap(51, 51, 51)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -466,14 +499,12 @@ private boolean verifyPassword(String password, String storedHashedPassword) {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnLogin;
-    private javax.swing.JComboBox<String> cbAccountType;
     private javax.swing.JCheckBox chkPass;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JPanel jPanel1;
