@@ -27,7 +27,7 @@ public class LogIn extends javax.swing.JFrame {
         public static Connection connectDB(){    
         try{
             Class.forName("org.sqlite.JDBC");
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
             System.out.println("Connected");
             
             return conn;

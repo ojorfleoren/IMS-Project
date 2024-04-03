@@ -423,7 +423,7 @@ public void insertItem() {
 //Get info of column in database
 private String getItemSerialNumber(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT SerialNo FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -441,7 +441,7 @@ private String getItemSerialNumber(int itemID) {
 }
 private String getItemName(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT ItemName FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -459,7 +459,7 @@ private String getItemName(int itemID) {
 }
 private String getItemModel(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Model FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -477,7 +477,7 @@ private String getItemModel(int itemID) {
 }
 private String getItemSpecification(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Specification FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -495,7 +495,7 @@ private String getItemSpecification(int itemID) {
 }
 private String getCategory(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Category FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -513,7 +513,7 @@ private String getCategory(int itemID) {
 }
 private String getBrand(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Brand FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -669,7 +669,7 @@ public void displayReturnData() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, c.Qty AS CheckedQty, r.Qty AS ReturnedQty, r.Date " +
                      "FROM Return r " +
@@ -739,7 +739,7 @@ public void displayCombinedData() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Qty, " +
                      "c.Date AS CheckingDate " +
@@ -776,7 +776,7 @@ public void displayChecking() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Qty, " +
                      "c.Date AS CheckingDate " +

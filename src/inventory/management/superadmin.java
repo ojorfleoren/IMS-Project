@@ -1,6 +1,7 @@
 package inventory.management;
 
 
+import java.awt.Font;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -53,7 +54,9 @@ public superadmin() {
         displayReturnCount();
         displayDisposalCount();
         displayAccountTypeCounts();
-        alignText(tblStock);
+        alignAccounts(tblAccounts);
+        alignDataInfo(tblDataInfo);
+        alignStock(tblStock);
         alignRelease(tblRelease);
         alignChecking(tblChecking);
         alignReturn(tblReturn);
@@ -68,7 +71,12 @@ public superadmin() {
     // Attach key listener to txtQty
     txtQty.addKeyListener(createNumericKeyListener());
     }
-private static final int[] stockAlignment = {SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
+    private static final int[] dataAlignment = {SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
+                                              SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
+                                              SwingConstants.CENTER, SwingConstants.CENTER};
+    private static final int[] dataWidths = {15, 40, 80, 80, 80, 50, 70, 15};
+    
+    private static final int[] stockAlignment = {SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
                                               SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
                                               SwingConstants.CENTER, SwingConstants.CENTER};
     private static final int[] minWidths = {15, 40, 150, 120, 200, 50, 70, 15};
@@ -76,17 +84,76 @@ private static final int[] stockAlignment = {SwingConstants.CENTER, SwingConstan
     private static final int[] alignment = {SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
                                               SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
                                               SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER};
-    private static final int[] Widths = {60, 15, 80, 130, 100, 170, 60, 90, 15, 90};
+    private static final int[] Widths = {95, 70, 80, 130, 100, 120, 90, 100, 15, 110};
+    
+    private static final int[] userAlignment = {SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
+                                              SwingConstants.CENTER, SwingConstants.CENTER, SwingConstants.CENTER,
+                                              SwingConstants.CENTER};
+    private static final int[] userWidths = {10, 100, 100, 50, 50, 50, 100};
     
     
-    public static void alignText(JTable tblStock) {
+    
+    public static void alignAccounts(JTable tblAccounts) {
         DefaultTableCellRenderer renderer;
-        JTableHeader header = tblStock.getTableHeader();
+        JTableHeader header = tblAccounts.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 14));
+
+        for (int i = 0; i < tblAccounts.getColumnCount() && i < userAlignment.length; i++) {
+            int align = userAlignment[i];
+            int minWidth = userWidths[i];
+            renderer = new DefaultTableCellRenderer();
+            renderer.setHorizontalAlignment(align);
+            tblAccounts.getColumnModel().getColumn(i).setCellRenderer(renderer);
+            tblAccounts.getColumnModel().getColumn(i).setMinWidth(minWidth); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblAccounts.getTableHeader().getColumnModel().getColumn(i).setMinWidth(minWidth);
+        }
+    }
+    
+    public static void alignDataInfo(JTable tblDataInfo) {
+        DefaultTableCellRenderer renderer;
+        JTableHeader header = tblDataInfo.getTableHeader();
+        TableCellRenderer headerRenderer = header.getDefaultRenderer();
+
+        // Set alignment for header
+        ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 14));
+
+        for (int i = 0; i < tblDataInfo.getColumnCount() && i < dataAlignment.length; i++) {
+            int align = dataAlignment[i];
+            int minWidth = dataWidths[i];
+            renderer = new DefaultTableCellRenderer();
+            renderer.setHorizontalAlignment(align);
+            tblDataInfo.getColumnModel().getColumn(i).setCellRenderer(renderer);
+            tblDataInfo.getColumnModel().getColumn(i).setMinWidth(minWidth); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblDataInfo.getTableHeader().getColumnModel().getColumn(i).setMinWidth(minWidth);
+        }
+    }
+    public static void alignStock(JTable tblStock) {
+        DefaultTableCellRenderer renderer;
+        JTableHeader header = tblStock.getTableHeader();
+        TableCellRenderer headerRenderer = header.getDefaultRenderer();
+
+        // Set alignment for header
+        ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15));
+
         for (int i = 0; i < tblStock.getColumnCount() && i < stockAlignment.length; i++) {
             int align = stockAlignment[i];
             int minWidth = minWidths[i];
@@ -94,7 +161,7 @@ private static final int[] stockAlignment = {SwingConstants.CENTER, SwingConstan
             renderer.setHorizontalAlignment(align);
             tblStock.getColumnModel().getColumn(i).setCellRenderer(renderer);
             tblStock.getColumnModel().getColumn(i).setMinWidth(minWidth); // Set minimum width for cell
-           
+
             // Set minimum width for header
             tblStock.getTableHeader().getColumnModel().getColumn(i).setMinWidth(minWidth);
         }
@@ -103,94 +170,123 @@ private static final int[] stockAlignment = {SwingConstants.CENTER, SwingConstan
         DefaultTableCellRenderer renderer;
         JTableHeader header = tblRelease.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15)); // Set font size to 18
+
         for (int i = 0; i < tblRelease.getColumnCount() && i < alignment.length; i++) {
             int align = alignment[i];
-            int Width = Widths[i];
+            int width = Widths[i];
             renderer = new DefaultTableCellRenderer();
             renderer.setHorizontalAlignment(align);
             tblRelease.getColumnModel().getColumn(i).setCellRenderer(renderer);
-            tblRelease.getColumnModel().getColumn(i).setMinWidth(Width); // Set minimum width for cell
-           
+            tblRelease.getColumnModel().getColumn(i).setMinWidth(width); // Set minimum width for cell
+
             // Set minimum width for header
-            tblRelease.getTableHeader().getColumnModel().getColumn(i).setMinWidth(Width);
+            tblRelease.getTableHeader().getColumnModel().getColumn(i).setMinWidth(width);
         }
     }
     public static void alignChecking(JTable tblChecking) {
         DefaultTableCellRenderer renderer;
         JTableHeader header = tblChecking.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15)); // Set font size to 18
+
         for (int i = 0; i < tblChecking.getColumnCount() && i < alignment.length; i++) {
             int align = alignment[i];
-            int Width = Widths[i];
+            int width = Widths[i];
             renderer = new DefaultTableCellRenderer();
             renderer.setHorizontalAlignment(align);
             tblChecking.getColumnModel().getColumn(i).setCellRenderer(renderer);
-            tblChecking.getColumnModel().getColumn(i).setMinWidth(Width); // Set minimum width for cell
-            tblChecking.getTableHeader().getColumnModel().getColumn(i).setMinWidth(Width);
+            tblChecking.getColumnModel().getColumn(i).setMinWidth(width); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblChecking.getTableHeader().getColumnModel().getColumn(i).setMinWidth(width);
         }
     }
     public static void alignReturn(JTable tblReturn) {
         DefaultTableCellRenderer renderer;
         JTableHeader header = tblReturn.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15)); // Set font size to 18
+
         for (int i = 0; i < tblReturn.getColumnCount() && i < alignment.length; i++) {
             int align = alignment[i];
-            int Width = Widths[i];
+            int width = Widths[i];
             renderer = new DefaultTableCellRenderer();
             renderer.setHorizontalAlignment(align);
             tblReturn.getColumnModel().getColumn(i).setCellRenderer(renderer);
-            tblReturn.getColumnModel().getColumn(i).setMinWidth(Width); // Set minimum width for cell
-            tblReturn.getTableHeader().getColumnModel().getColumn(i).setMinWidth(Width);
+            tblReturn.getColumnModel().getColumn(i).setMinWidth(width); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblReturn.getTableHeader().getColumnModel().getColumn(i).setMinWidth(width);
         }
     }
     public static void alignRepair(JTable tblRepair) {
         DefaultTableCellRenderer renderer;
         JTableHeader header = tblRepair.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15)); // Set font size to 18
+
         for (int i = 0; i < tblRepair.getColumnCount() && i < alignment.length; i++) {
             int align = alignment[i];
-            int Width = Widths[i];
+            int width = Widths[i];
             renderer = new DefaultTableCellRenderer();
             renderer.setHorizontalAlignment(align);
             tblRepair.getColumnModel().getColumn(i).setCellRenderer(renderer);
-            tblRepair.getColumnModel().getColumn(i).setMinWidth(Width); // Set minimum width for cell
-            tblRepair.getTableHeader().getColumnModel().getColumn(i).setMinWidth(Width);
+            tblRepair.getColumnModel().getColumn(i).setMinWidth(width); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblRepair.getTableHeader().getColumnModel().getColumn(i).setMinWidth(width);
         }
     }
     public static void alignDisposal(JTable tblDisposal) {
         DefaultTableCellRenderer renderer;
         JTableHeader header = tblDisposal.getTableHeader();
         TableCellRenderer headerRenderer = header.getDefaultRenderer();
-        
+
         // Set alignment for header
         ((DefaultTableCellRenderer) headerRenderer).setHorizontalAlignment(SwingConstants.CENTER);
         
+        // Set font and bold for header
+        Font headerFont = header.getFont();
+        header.setFont(headerFont.deriveFont(Font.BOLD, 15)); // Set font size to 18
+
         for (int i = 0; i < tblDisposal.getColumnCount() && i < alignment.length; i++) {
             int align = alignment[i];
-            int Width = Widths[i];
+            int width = Widths[i];
             renderer = new DefaultTableCellRenderer();
             renderer.setHorizontalAlignment(align);
             tblDisposal.getColumnModel().getColumn(i).setCellRenderer(renderer);
-            tblDisposal.getColumnModel().getColumn(i).setMinWidth(Width); // Set minimum width for cell
-            tblDisposal.getTableHeader().getColumnModel().getColumn(i).setMinWidth(Width);
+            tblDisposal.getColumnModel().getColumn(i).setMinWidth(width); // Set minimum width for cell
+
+            // Set minimum width for header
+            tblDisposal.getTableHeader().getColumnModel().getColumn(i).setMinWidth(width);
         }
     }
+   
     //End-------------------------------------------------------------------------------------------------------------End
 //Keyboard listener
 private KeyListener createNumericDashKeyListener() {
@@ -691,7 +787,7 @@ private void saveItem() {
 //Method to get each column in the stock
 private String getItemSerialNumber(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT SerialNo FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -709,7 +805,7 @@ private String getItemSerialNumber(int itemID) {
 }
 private String getItemName(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT ItemName FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -727,7 +823,7 @@ private String getItemName(int itemID) {
 }
 private String getItemModel(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Model FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -745,7 +841,7 @@ private String getItemModel(int itemID) {
 }
 private String getItemSpecification(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Specification FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -763,7 +859,7 @@ private String getItemSpecification(int itemID) {
 }
 private String getCategory(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Category FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -781,7 +877,7 @@ private String getCategory(int itemID) {
 }
 private String getBrand(int itemID) {
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
         String sql = "SELECT Brand FROM Stock WHERE ItemID = ?";
         try (PreparedStatement pst = conn.prepareStatement(sql)) {
             pst.setInt(1, itemID);
@@ -988,7 +1084,7 @@ public void transferCheckingItem(String sourceTable) {
                 // Check if the item already exists in the destination area
                 int existingQty = 0;
                 String selectExistingSql = "SELECT Qty FROM " + selectedArea + " WHERE ItemID = ?";
-                conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+                conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
                 try (PreparedStatement selectExistingPst = conn.prepareStatement(selectExistingSql)) {
                     selectExistingPst.setInt(1, itemID);
                     ResultSet existingRs = selectExistingPst.executeQuery();
@@ -1160,7 +1256,7 @@ public void transferReleaseItem() {
                 // Check if the item already exists in the destination area
                 int existingQty = 0;
                 String selectExistingSql = "SELECT Qty FROM " + selectedArea + " WHERE ItemID = ?";
-                conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+                conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
                 try (PreparedStatement selectExistingPst = conn.prepareStatement(selectExistingSql)) {
                     selectExistingPst.setInt(1, itemID);
                     ResultSet existingRs = selectExistingPst.executeQuery();
@@ -1281,7 +1377,7 @@ public void transferReturnItem() {
 
             // Get existing quantity in the Stock table for the item
             int existingQty = 0;
-            conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+            conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
             String selectSql = "SELECT Qty FROM Stock WHERE ItemID = ?";
             try (PreparedStatement selectPst = conn.prepareStatement(selectSql)) {
                 selectPst.setInt(1, itemID);
@@ -1418,7 +1514,7 @@ public void transferRepairItem() {
                 // Check if the item already exists in the destination area
                 int existingQty = 0;
                 String selectExistingSql = "SELECT Qty FROM " + selectedArea + " WHERE ItemID = ?";
-                conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+                conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
                 try (PreparedStatement selectExistingPst = conn.prepareStatement(selectExistingSql)) {
                     selectExistingPst.setInt(1, itemID);
                     ResultSet existingRs = selectExistingPst.executeQuery();
@@ -1652,7 +1748,7 @@ public void displayReturnData() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT r.ReturnID, r.ItemID, s.SerialNo, s.ItemName, s.Model, s.Specification, s.Category, s.Brand, c.Qty AS CheckedQty, r.Qty AS ReturnedQty, r.Date " +
                      "FROM Return r " +
@@ -1722,7 +1818,7 @@ public void displayCombinedData() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Qty, " +
                      "c.Date AS CheckingDate " +
@@ -1759,7 +1855,7 @@ public void displayChecking() {
     model.setRowCount(0); // Clear existing rows
 
     try {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:ITEMS.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:CELO_Database.db");
 
         String sql = "SELECT s.ItemID, s.SerialNo, s.ItemName, s.Model, s.Category, s.Specification, s.Brand, s.Qty, " +
                      "c.Date AS CheckingDate " +
@@ -3463,6 +3559,7 @@ public static void printDisposal(JTable tblDisposal) {
                 return canEdit [columnIndex];
             }
         });
+        tblAccounts.setShowGrid(true);
         jScrollPane7.setViewportView(tblAccounts);
         if (tblAccounts.getColumnModel().getColumnCount() > 0) {
             tblAccounts.getColumnModel().getColumn(0).setResizable(false);
@@ -3637,8 +3734,7 @@ public static void printDisposal(JTable tblDisposal) {
                             .addComponent(btnViewUser2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(txtSearchUser, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jLabel26, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(0, 0, 0)))
+                                .addComponent(jLabel26, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                 .addGroup(jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel11Layout.createSequentialGroup()
                         .addComponent(jLabel21)
@@ -3752,6 +3848,7 @@ public static void printDisposal(JTable tblDisposal) {
 
         tabSuperadmin.setTabPlacement(javax.swing.JTabbedPane.BOTTOM);
 
+        tblStock.setFont(new java.awt.Font("Segoe UI", 0, 15)); // NOI18N
         tblStock.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null, null, null, null, null},
@@ -3760,7 +3857,7 @@ public static void printDisposal(JTable tblDisposal) {
                 {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "ID", "Serial No.", "Item  Name", "Model", "Specification", "Category", "Brand", "Qty."
+                "ID", "Serial No.", "ItemName", "Model", "Specification", "Category", "Brand", "Qty"
             }
         ) {
             Class[] types = new Class [] {
@@ -3778,6 +3875,7 @@ public static void printDisposal(JTable tblDisposal) {
                 return canEdit [columnIndex];
             }
         });
+        tblStock.setShowGrid(true);
         jScrollPane2.setViewportView(tblStock);
         if (tblStock.getColumnModel().getColumnCount() > 0) {
             tblStock.getColumnModel().getColumn(0).setResizable(false);
@@ -4245,7 +4343,7 @@ public static void printDisposal(JTable tblDisposal) {
                 {null, null, null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "DisposalID", "ItemID", "Serial No.", "Name", "Model", "Specification", "Category", "Brand", "Qty.", "DisposalDate"
+                "DisposalID", "ItemID", "Serial No.", "Name", "Model", "Specification", "Category", "Brand", "Qty", "DisposalDate"
             }
         ) {
             Class[] types = new Class [] {
@@ -4492,13 +4590,13 @@ public static void printDisposal(JTable tblDisposal) {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 1356, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 750, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(0, 0, Short.MAX_VALUE))
         );
 

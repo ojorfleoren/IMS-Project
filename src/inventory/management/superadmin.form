@@ -24,7 +24,7 @@
     <DimensionLayout dim="0">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
-              <Component id="jPanel1" min="-2" pref="1356" max="-2" attributes="0"/>
+              <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
               <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
           </Group>
       </Group>
@@ -32,7 +32,7 @@
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
-              <Component id="jPanel1" min="-2" pref="750" max="-2" attributes="0"/>
+              <Component id="jPanel1" min="-2" max="-2" attributes="0"/>
               <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
           </Group>
       </Group>
@@ -1622,7 +1622,6 @@
                                                   <Component id="jLabel26" alignment="3" min="-2" pref="26" max="-2" attributes="0"/>
                                               </Group>
                                           </Group>
-                                          <EmptySpace min="0" pref="0" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
                                   <Group type="103" groupAlignment="0" attributes="0">
@@ -1818,6 +1817,7 @@
                                     </Column>
                                   </TableColumnModel>
                                 </Property>
+                                <Property name="showGrid" type="boolean" value="true"/>
                                 <Property name="tableHeader" type="javax.swing.table.JTableHeader" editor="org.netbeans.modules.form.editors2.JTableHeaderEditor">
                                   <TableHeader reorderingAllowed="true" resizingAllowed="true"/>
                                 </Property>
@@ -2202,16 +2202,19 @@
                               <SubComponents>
                                 <Component class="javax.swing.JTable" name="tblStock">
                                   <Properties>
+                                    <Property name="font" type="java.awt.Font" editor="org.netbeans.beaninfo.editors.FontEditor">
+                                      <Font name="Segoe UI" size="15" style="0"/>
+                                    </Property>
                                     <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
                                       <Table columnCount="8" rowCount="4">
                                         <Column editable="false" title="ID" type="java.lang.Integer"/>
                                         <Column editable="false" title="Serial No." type="java.lang.String"/>
-                                        <Column editable="false" title="Item  Name" type="java.lang.String"/>
+                                        <Column editable="false" title="ItemName" type="java.lang.String"/>
                                         <Column editable="false" title="Model" type="java.lang.String"/>
                                         <Column editable="false" title="Specification" type="java.lang.String"/>
                                         <Column editable="false" title="Category" type="java.lang.String"/>
                                         <Column editable="false" title="Brand" type="java.lang.String"/>
-                                        <Column editable="false" title="Qty." type="java.lang.Integer"/>
+                                        <Column editable="false" title="Qty" type="java.lang.Integer"/>
                                       </Table>
                                     </Property>
                                     <Property name="columnModel" type="javax.swing.table.TableColumnModel" editor="org.netbeans.modules.form.editors2.TableColumnModelEditor">
@@ -2258,6 +2261,7 @@
                                         </Column>
                                       </TableColumnModel>
                                     </Property>
+                                    <Property name="showGrid" type="boolean" value="true"/>
                                     <Property name="tableHeader" type="javax.swing.table.JTableHeader" editor="org.netbeans.modules.form.editors2.JTableHeaderEditor">
                                       <TableHeader reorderingAllowed="true" resizingAllowed="true"/>
                                     </Property>
@@ -3046,7 +3050,7 @@
                                         <Column editable="false" title="Specification" type="java.lang.String"/>
                                         <Column editable="false" title="Category" type="java.lang.String"/>
                                         <Column editable="false" title="Brand" type="java.lang.String"/>
-                                        <Column editable="false" title="Qty." type="java.lang.Integer"/>
+                                        <Column editable="false" title="Qty" type="java.lang.Integer"/>
                                         <Column editable="false" title="DisposalDate" type="java.lang.String"/>
                                       </Table>
                                     </Property>
